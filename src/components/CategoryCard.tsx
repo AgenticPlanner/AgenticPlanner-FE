@@ -1,13 +1,15 @@
 import React from 'react';
 import { type PlanCategory } from '../types';
+import { type Language } from '../types/translations';
 
 interface CategoryCardProps {
   category: PlanCategory;
   isActive: boolean;
   onClick: (id: string) => void;
+  language: Language;
 }
 
-export default function CategoryCard({ category, isActive, onClick }: CategoryCardProps) {
+export default function CategoryCard({ category, isActive, onClick, language }: CategoryCardProps) {
   return (
     <button
       onClick={() => onClick(category.id)}
@@ -29,8 +31,8 @@ export default function CategoryCard({ category, isActive, onClick }: CategoryCa
           role="presentation"
         />
       </div>
-      <span className="ml-6 text-[1.05rem] font-medium text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
-        {category.title}
+      <span className="ml-6 text-[1.05rem] font-medium text-gray-900 dark:text-gray-100 font-serif transition-colors duration-200">
+        {language === 'ko' ? category.titleKo : category.title}
       </span>
     </button>
   );

@@ -8,7 +8,6 @@ interface OnboardingSectionProps {
   step2Desc: string;
   step3Title: string;
   step3Desc: string;
-  ctaText: string;
   ctaButton: string;
 }
 
@@ -20,7 +19,6 @@ export default function OnboardingSection({
   step2Desc,
   step3Title,
   step3Desc,
-  ctaText,
   ctaButton,
 }: OnboardingSectionProps) {
   const scrollToTop = () => {
@@ -28,7 +26,7 @@ export default function OnboardingSection({
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-20 bg-linear-to-b from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
+    <div className="min-h-screen flex flex-col items-center justify-center px-20 py-20 bg-linear-to-b from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
       <div className="mx-auto">
         
         {/* Section Title */}
@@ -82,12 +80,9 @@ export default function OnboardingSection({
 
         {/* CTA Section */}
         <div className="text-center">
-          <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-            {ctaText}
-          </p>
           <button
             onClick={scrollToTop}
-            className="px-12 py-5 bg-gray-900 text-gray-700 dark:bg-white dark:text-gray-900 rounded-full font-semibold text-lg shadow-xl hover:shadow-2xl hover:bg-black dark:hover:bg-gray-100 transform hover:scale-105 transition-all duration-300"
+            className="px-8 py-3 bg-[#EAF0EC] dark:bg-gray-800 border-2 border-[#C5D0C9] dark:border-gray-700 rounded-full font-semibold text-sm text-gray-900 dark:text-gray-100 hover:bg-[#D8E3DC] hover:border-[#A0B0A8] dark:hover:bg-gray-700 dark:hover:border-gray-600 transition-all duration-200"
           >
             {ctaButton} 👆
           </button>
