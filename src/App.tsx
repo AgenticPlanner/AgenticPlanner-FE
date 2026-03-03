@@ -65,7 +65,6 @@ export default function App() {
         step2Desc={t.step2Desc}
         step3Title={t.step3Title}
         step3Desc={t.step3Desc}
-        ctaText={t.ctaText}
         ctaButton={t.ctaButton}
       />
       </main>

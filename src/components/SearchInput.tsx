@@ -35,7 +35,7 @@ export default function SearchInput({ value, onChange, onSubmit, onFocus, onBlur
         <input
           ref={inputRef}
           type="text"
-          className="flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 text-[1.1rem] font-semibold placeholder-gray-500 dark:placeholder-gray-400 font-sans"
+          className="flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 text-[1.1rem] font-semibold placeholder-gray-500 dark:placeholder-gray-400 font-serif"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}

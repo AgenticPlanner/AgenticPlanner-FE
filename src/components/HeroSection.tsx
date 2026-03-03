@@ -25,6 +25,7 @@ export default function HeroSection({
   isFocused,
   prompt,
   activeCategoryId,
+  language,
   mainTitle,
   searchPlaceholder,
   onPromptChange,
@@ -77,6 +78,7 @@ export default function HeroSection({
                   category={category}
                   isActive={activeCategoryId === category.id}
                   onClick={onCategoryChange}
+                  language={language}
                 />
               </div>
             ))}
