@@ -1,51 +1,114 @@
 @import "tailwindcss";
 
-:root {
-  font-family: "Playfair Display", system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+@theme {
+  /* Colors */
+  --color-primary: #106a68;
+  --color-primary-dim: #005d5b;
+  --color-primary-fixed: #a3f0ec;
+  --color-primary-fixed-dim: #96e2de;
+  --color-primary-container: #a3f0ec;
+  --color-on-primary: #e1fffd;
+  --color-on-primary-fixed: #004746;
+  --color-on-primary-fixed-variant: #076664;
+  --color-on-primary-container: #005c5a;
+  --color-inverse-primary: #affcf8;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --color-secondary: #4b626e;
+  --color-secondary-dim: #3f5661;
+  --color-secondary-fixed: #cde6f4;
+  --color-secondary-fixed-dim: #bfd8e5;
+  --color-secondary-container: #cde6f4;
+  --color-on-secondary: #f2faff;
+  --color-on-secondary-fixed: #2b424d;
+  --color-on-secondary-fixed-variant: #475f6a;
+  --color-on-secondary-container: #3e5560;
+
+  --color-tertiary: #38647c;
+  --color-tertiary-dim: #2b586f;
+  --color-tertiary-fixed: #b6e3fe;
+  --color-tertiary-fixed-dim: #a9d5f0;
+  --color-tertiary-container: #b6e3fe;
+  --color-on-tertiary: #f4faff;
+  --color-on-tertiary-fixed: #0d4056;
+  --color-on-tertiary-fixed-variant: #305d74;
+  --color-on-tertiary-container: #26536a;
+
+  --color-background: #f8fafb;
+  --color-surface: #f8fafb;
+  --color-surface-dim: #d4dbde;
+  --color-surface-bright: #f8fafb;
+  --color-surface-tint: #106a68;
+  --color-surface-variant: #dce4e6;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f0f4f6;
+  --color-surface-container: #eaeff0;
+  --color-surface-container-high: #e3e9eb;
+  --color-surface-container-highest: #dce4e6;
+  --color-on-surface: #2c3436;
+  --color-on-surface-variant: #596063;
+  --color-on-background: #2c3436;
+  --color-inverse-surface: #0b0f10;
+  --color-inverse-on-surface: #9a9d9e;
+
+  --color-outline: #747c7e;
+  --color-outline-variant: #acb3b6;
+
+  --color-error: #a83836;
+  --color-error-dim: #67040d;
+  --color-error-container: #fa746f;
+  --color-on-error: #fff7f6;
+  --color-on-error-container: #6e0a12;
+
+  /* Typography */
+  --font-headline: "Manrope", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-label: "Inter", sans-serif;
+
+  /* Border radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+
+  /* Shadows */
+  --shadow-ambient: 0 8px 24px -4px rgba(44, 52, 54, 0.06);
+  --shadow-float: 0 20px 40px -10px rgba(16, 106, 104, 0.18);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+@layer utilities {
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    font-family: 'Material Symbols Outlined';
+    font-style: normal;
+    display: inline-block;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .signature-gradient {
+    background: linear-gradient(45deg, #106a68, #a3f0ec);
+  }
+
+  .itinerary-line {
+    background-image: linear-gradient(to bottom, #96e2de 50%, transparent 50%);
+    background-size: 2px 12px;
+    background-repeat: repeat-y;
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+  background-color: var(--color-background);
+  font-family: var(--font-body);
+  color: var(--color-on-surface);
 }

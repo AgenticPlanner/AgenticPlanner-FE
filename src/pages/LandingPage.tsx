@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 // 카테고리 더미 데이터 (이미지는 임시 플레이스홀더 사용)
 const categories = [
-  { id: 1, title: 'Wedding', imgSrc: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=200&h=200' },
-  { id: 2, title: 'Road Trip w/ Friends', imgSrc: 'https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?auto=format&fit=crop&q=80&w=200&h=200' },
-  { id: 3, title: 'Family Affair / Holiday', imgSrc: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=200&h=200' },
-  { id: 4, title: 'Ski Trip', imgSrc: 'https://images.unsplash.com/photo-1551524559-8af4e6624178?auto=format&fit=crop&q=80&w=200&h=200' },
-  { id: 5, title: 'Home Gathering', imgSrc: 'https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?auto=format&fit=crop&q=80&w=200&h=200' },
-  { id: 6, title: 'Family Trip', imgSrc: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&q=80&w=200&h=200' },
+  { id: 1, title: '결혼식', imgSrc: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=200&h=200' },
+  { id: 2, title: '친구들과 드라이브', imgSrc: 'https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?auto=format&fit=crop&q=80&w=200&h=200' },
+  { id: 3, title: '가족 행사/휴가', imgSrc: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=200&h=200' },
+  { id: 4, title: '스키 여행', imgSrc: 'https://images.unsplash.com/photo-1551524559-8af4e6624178?auto=format&fit=crop&q=80&w=200&h=200' },
+  { id: 5, title: '홈 파티', imgSrc: 'https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?auto=format&fit=crop&q=80&w=200&h=200' },
+  { id: 6, title: '가족 여행', imgSrc: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&q=80&w=200&h=200' },
 ];
 
 export default function LandingPage() {
-  const [inputValue, setInputValue] = useState('I wanna plan a 3-day ski trip at Alps with my friend. It should be on budget');
-  const [activeCategory, setActiveCategory] = useState<number | null>(4); // 초기값으로 Ski Trip 활성화
+  const [inputValue, setInputValue] = useState('3일 알프스 스키 여행을 친구들과 예산 범위 내에서 계획하고 싶어요');
+  const [activeCategory, setActiveCategory] = useState<number | null>(4); // 초기값으로 스키 여행 활성화
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center pt-24 px-4 font-sans">
       {/* Title */}
       <h1 className="text-4xl md:text-5xl font-serif text-gray-900 mb-10 tracking-tight text-center">
-        What do you wanna plan with us?
+        무엇을 함께 계획하고 싶으신가요?
       </h1>
 
       {/* Input Field */}
@@ -29,7 +29,7 @@ export default function LandingPage() {
             className="w-full bg-transparent border-none outline-none text-gray-800 text-lg placeholder-gray-500 font-medium"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Tell us what you want to plan..."
+            placeholder="계획하고 싶은 내용을 말씀해주세요..."
           />
           {/* 깜빡이는 커서 효과를 위한 장식 (옵션) */}
           <span className="w-0.5 h-6 bg-gray-800 animate-pulse ml-1"></span>
