@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface OnboardingSectionProps {
   howItWorks: string;
   step1Title: string;

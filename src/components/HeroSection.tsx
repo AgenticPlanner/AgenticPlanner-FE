@@ -1,23 +1,17 @@
-import React from 'react';
 import SearchInput from './SearchInput';
 import CategoryCard from './CategoryCard';
 import { CATEGORIES } from '../data/mockData';
-import { type Language } from '../types/translations';
 
 interface HeroSectionProps {
   isVisible: boolean;
   isFocused: boolean;
   prompt: string;
   activeCategoryId: string;
-  language: Language;
-  mainTitle: string;
-  searchPlaceholder: string;
   onPromptChange: (value: string) => void;
   onSubmit: () => void;
   onFocus: () => void;
   onBlur: () => void;
   onCategoryChange: (categoryId: string) => void;
-  onLanguageToggle: () => void;
 }
 
 export default function HeroSection({
@@ -25,9 +19,6 @@ export default function HeroSection({
   isFocused,
   prompt,
   activeCategoryId,
-  language,
-  mainTitle,
-  searchPlaceholder,
   onPromptChange,
   onSubmit,
   onFocus,
@@ -37,25 +28,25 @@ export default function HeroSection({
   return (
     <div className="mx-auto min-h-screen flex flex-col items-center justify-center px-4 py-16 relative">
       <div className="w-full flex flex-col items-center">
-        
+
         {/* Title with fade-in animation */}
         <h1 className={`text-[2.5rem] md:text-[3.5rem] font-serif text-gray-900 dark:text-white mb-10 tracking-tight text-center leading-tight transition-all duration-700 transform ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
         }`}>
-          {mainTitle}
+          무엇을 함께 계획하고 싶으신가요?
         </h1>
 
         {/* Input Component with animation */}
         <div className={`w-full flex justify-center transition-all duration-700 delay-100 transform ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}>
-          <SearchInput 
-            value={prompt} 
+          <SearchInput
+            value={prompt}
             onChange={onPromptChange}
             onSubmit={onSubmit}
             onFocus={onFocus}
             onBlur={onBlur}
-            placeholder={searchPlaceholder}
+            placeholder="계획하고 싶은 내용을 말씀해주세요..."
           />
         </div>
 
@@ -78,7 +69,6 @@ export default function HeroSection({
                   category={category}
                   isActive={activeCategoryId === category.id}
                   onClick={onCategoryChange}
-                  language={language}
                 />
               </div>
             ))}
