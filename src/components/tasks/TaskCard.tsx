@@ -19,11 +19,11 @@ const getStatusBadgeStyles = (status: Task['status']) => {
 const getStatusLabel = (status: Task['status']) => {
   switch (status) {
     case 'todo':
-      return 'To Do';
+      return '할 일';
     case 'in-progress':
-      return 'In Progress';
+      return '진행 중';
     case 'done':
-      return 'Done';
+      return '완료';
   }
 };
 
