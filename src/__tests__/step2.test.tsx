@@ -81,9 +81,9 @@ describe('STEP 2: 공통 레이아웃 컴포넌트', () => {
         </MemoryRouter>
       );
 
-    it('"Serene Navigator" 타이틀이 렌더링된다', () => {
+    it('"Agentic Planner" 타이틀이 렌더링된다', () => {
       renderTopBar();
-      expect(screen.getByText('Serene Navigator')).toBeInTheDocument();
+      expect(screen.getByText('Agentic Planner')).toBeInTheDocument();
     });
 
     it('검색 input이 존재한다', () => {
@@ -137,7 +137,7 @@ describe('STEP 2: 공통 레이아웃 컴포넌트', () => {
         </MemoryRouter>
       );
       expect(screen.getByText('Trip Planner')).toBeInTheDocument();
-      expect(screen.getByText('Serene Navigator')).toBeInTheDocument();
+      expect(screen.getByText('Agentic Planner')).toBeInTheDocument();
     });
 
     it('레이아웃이 flex 구조를 갖는다', () => {

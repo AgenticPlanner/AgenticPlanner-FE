@@ -2,7 +2,7 @@ interface TopBarProps {
   title?: string;
 }
 
-export default function TopBar({ title = 'Serene Navigator' }: TopBarProps) {
+export default function TopBar({ title = 'Agentic Planner' }: TopBarProps) {
   return (
     <header className="sticky top-0 h-20 bg-surface-container-lowest/80 backdrop-blur-xl z-40 flex items-center px-8 gap-8 border-b border-surface-container">
       {/* Left Section */}
