@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 
+const AuthPage = lazy(() => import('./pages/AuthPage'));
 const TaskPage = lazy(() => import('./pages/TaskPage'));
 const ItineraryPage = lazy(() => import('./pages/ItineraryPage'));
 
@@ -15,6 +16,14 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/auth"
+        element={
+          <Suspense fallback={<Spinner />}>
+            <AuthPage />
+          </Suspense>
+        }
+      />
       <Route
         path="/tasks"
         element={
