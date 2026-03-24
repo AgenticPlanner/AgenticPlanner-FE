@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AppLayout } from '../components/layout';
-import { DaySelector, TimelineThread, StopCard, DaySidebar } from '../components/itinerary';
+import { DaySelector, TimelineThread, StopCard, DaySidebar } from '../components/features/itinerary';
+import { FABGroup } from '../components/common';
 import { tripDays } from '../data/tripData';
 
 export default function ItineraryPage() {
@@ -44,20 +45,7 @@ export default function ItineraryPage() {
         </div>
 
         {/* Floating Action Buttons */}
-        <div className="fixed bottom-10 right-10 flex flex-col space-y-4 z-50">
-          {/* Share Button */}
-          <button className="w-14 h-14 rounded-full bg-surface-container-lowest text-on-surface shadow-xl flex items-center justify-center hover:scale-105 transition-transform">
-            <span className="material-symbols-outlined">share</span>
-          </button>
-
-          {/* Add Task Button */}
-          <button
-            className="w-16 h-16 rounded-full signature-gradient text-on-primary flex items-center justify-center hover:scale-105 transition-transform"
-            style={{ boxShadow: '0 20px 40px -10px rgba(16, 106, 104, 0.4)' }}
-          >
-            <span className="material-symbols-outlined text-2xl">add_task</span>
-          </button>
-        </div>
+        <FABGroup onShare={() => {}} onAdd={() => {}} addIcon="add_task" />
       </div>
     </AppLayout>
   );

@@ -1,4 +1,4 @@
-import type { TripDay } from '../../types/index';
+import type { TripDay } from '@/types/index';
 
 interface DaySelectorProps {
   days: TripDay[];
