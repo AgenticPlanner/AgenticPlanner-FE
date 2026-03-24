@@ -1,29 +1,19 @@
-import type { Task } from '../../types/index';
+import type { Task } from '@/types/index';
+import { Badge, Button, Card } from '@/components/ui';
 
 interface TaskCardProps {
   task: Task;
   featured?: boolean;
 }
 
-const getStatusBadgeStyles = (status: Task['status']) => {
+const getStatusBadgeStatus = (status: Task['status']) => {
   switch (status) {
     case 'todo':
-      return 'bg-surface-container-high text-outline';
+      return 'todo';
     case 'in-progress':
-      return 'bg-secondary-container text-on-secondary-container';
+      return 'in-progress';
     case 'done':
-      return 'bg-primary-container text-on-primary-container';
-  }
-};
-
-const getStatusLabel = (status: Task['status']) => {
-  switch (status) {
-    case 'todo':
-      return '할 일';
-    case 'in-progress':
-      return '진행 중';
-    case 'done':
-      return '완료';
+      return 'done';
   }
 };
 
@@ -35,14 +25,11 @@ const getIconColor = (status: Task['status'], featured?: boolean) => {
 export default function TaskCard({ task, featured = false }: TaskCardProps) {
   const isDone = task.status === 'done';
   const cardClass = featured ? 'lg:col-span-2' : '';
+  const badgeStatus = getStatusBadgeStatus(task.status);
 
   return (
     <div className={cardClass}>
-      <div
-        className={`group relative bg-surface-container-lowest rounded-xl p-8
-          ${featured ? 'hover:bg-surface-container-low' : ''}
-          transition-colors overflow-hidden ${isDone ? 'opacity-80' : ''}`}
-      >
+      <Card padding="md" hover={featured ? true : false}>
         {/* Abstract circle background */}
         <div
           className="absolute -right-12 -top-12 w-48 h-48 signature-gradient opacity-5 rounded-full blur-3xl
@@ -51,9 +38,7 @@ export default function TaskCard({ task, featured = false }: TaskCardProps) {
 
         {/* Top row: Status badge + Icon */}
         <div className="flex items-start justify-between mb-4 relative z-10">
-          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide ${getStatusBadgeStyles(task.status)}`}>
-            {getStatusLabel(task.status)}
-          </span>
+          <Badge status={badgeStatus as any} />
           <span
             className={`material-symbols-outlined text-2xl ${getIconColor(task.status, featured)}`}
             style={isDone ? { fontVariationSettings: "'FILL' 1" } : {}}
@@ -63,12 +48,22 @@ export default function TaskCard({ task, featured = false }: TaskCardProps) {
         </div>
 
         {/* Title */}
-        <h3 className={`font-headline font-bold ${featured ? 'text-2xl' : 'text-xl'} text-on-surface mb-3 relative z-10 ${isDone ? 'line-through opacity-60' : ''}`}>
+        <h3
+          className={`font-headline font-bold ${featured ? 'text-2xl' : 'text-xl'} text-on-surface mb-3 relative z-10 ${
+            isDone ? 'line-through opacity-60' : ''
+          }`}
+        >
           {task.title}
         </h3>
 
         {/* Description */}
-        <p className={`text-on-surface-variant ${featured ? 'leading-relaxed mb-6 max-w-md' : 'text-sm mb-8 leading-relaxed'} relative z-10`}>
+        <p
+          className={`text-on-surface-variant ${
+            featured
+              ? 'leading-relaxed mb-6 max-w-md'
+              : 'text-sm mb-8 leading-relaxed'
+          } relative z-10`}
+        >
           {task.description}
         </p>
 
@@ -77,7 +72,7 @@ export default function TaskCard({ task, featured = false }: TaskCardProps) {
           {/* Avatar stack (featured only) */}
           {featured && task.assignees && task.assignees.length > 0 && (
             <div className="flex">
-              {task.assignees.slice(0, 3).map((assignee, idx) => (
+              {task.assignees.slice(0, 3).map((assignee: string, idx: number) => (
                 <img
                   key={idx}
                   src={assignee}
@@ -90,23 +85,30 @@ export default function TaskCard({ task, featured = false }: TaskCardProps) {
 
           {/* CTA Button */}
           {featured ? (
-            <button className="bg-primary text-on-primary rounded-full px-6 py-2.5 font-semibold text-sm hover:shadow-ambient transition-shadow duration-300">
-              {task.ctaLabel}
-            </button>
-          ) : (
-            <button
-              className={`w-full ${
-                isDone
-                  ? 'border border-outline-variant text-outline rounded-full py-2.5 cursor-not-allowed'
-                  : 'bg-surface-container-high text-on-secondary-container rounded-full py-2.5 hover:bg-surface-container transition-colors'
-              } font-semibold text-sm`}
-              disabled={isDone}
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => {
+                /* CTA action */
+              }}
             >
               {task.ctaLabel}
-            </button>
+            </Button>
+          ) : (
+            <Button
+              variant={isDone ? 'ghost' : 'secondary'}
+              size="md"
+              disabled={isDone}
+              onClick={() => {
+                /* CTA action */
+              }}
+              className="w-full"
+            >
+              {task.ctaLabel}
+            </Button>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
