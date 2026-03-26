@@ -1,12 +1,50 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { loginUser, registerUser } from '@/api/auth';
 
 export default function AuthPage() {
+    const navigate = useNavigate();
+
     const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+    const [user_name, setUser_name] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
     const isSignIn = authMode === 'signin';
+
+    const handleAuthSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            if (isSignIn) {
+                await loginUser(user_name, password);
+                navigate('/itinerary');
+            } else {
+                if (password !== confirmPassword) {
+                    alert("비밀번호가 일치하지 않습니다.");
+                    return;
+                }
+                await registerUser(email, password, user_name);
+                alert("회원가입이 완료되었습니다.");
+                handleModeSwitch('signin');
+            }
+        } catch (error: any) {
+            alert(error.response?.data?.detail || "인증 실패");
+        }
+    };
+
+    const handleModeSwitch = (mode: 'signin' | 'signup') => {
+        setAuthMode(mode);
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setUser_name('');
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+    };
 
     return (
         <div className="h-[100dvh] w-full bg-background flex items-center justify-center px-4 md:px-6 relative overflow-hidden">
@@ -17,10 +55,9 @@ export default function AuthPage() {
             </div>
 
             <div className="w-full max-w-lg z-10 flex flex-col items-center">
-                {/* Main Auth Card */}
                 <div className="bg-surface-container-lowest rounded-lg p-8 shadow-ambient w-full">
 
-                    {/* Header Section with Inline Toggle */}
+                    {/* Header Section */}
                     <div className="mb-8">
                         <h3 className="font-headline font-extrabold text-3xl text-on-surface leading-tight mb-2">
                             {isSignIn ? 'Sign In' : 'Create an Account'}
@@ -30,7 +67,7 @@ export default function AuthPage() {
                                 <>
                                     Don't have an account?{' '}
                                     <button
-                                        onClick={() => setAuthMode('signup')}
+                                        onClick={() => handleModeSwitch('signup')}
                                         className="text-primary font-bold hover:text-primary-dim hover:underline transition-colors"
                                     >
                                         Create one
@@ -40,7 +77,7 @@ export default function AuthPage() {
                                 <>
                                     Already have an account?{' '}
                                     <button
-                                        onClick={() => setAuthMode('signin')}
+                                        onClick={() => handleModeSwitch('signin')}
                                         className="text-primary font-bold hover:text-primary-dim hover:underline transition-colors"
                                     >
                                         Sign in
@@ -50,29 +87,33 @@ export default function AuthPage() {
                         </p>
                     </div>
 
-                    {/* Form Area */}
-                    <form key={authMode} className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                        {/* Full Name (Signup Only) */}
+                    <form key={authMode} className="space-y-4" onSubmit={handleAuthSubmit}>
+                        <div className="space-y-1.5">
+                            <label className="block text-on-surface-variant text-xs font-bold uppercase tracking-widest ml-1">User Name</label>
+                            <input
+                                type="text"
+                                value={user_name}
+                                onChange={(e) => setUser_name(e.target.value)}
+                                required
+                                placeholder="Captain"
+                                className="w-full bg-surface-container-low border-none rounded-md py-3 px-5 focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline-variant text-on-surface"
+                            />
+                        </div>
+                        {/* Email Address (Signup Only) */}
                         {!isSignIn && (
                             <div className="space-y-1.5">
-                                <label className="block text-on-surface-variant text-xs font-bold uppercase tracking-widest ml-1">Full Name</label>
+                                <label className="block text-on-surface-variant text-xs font-bold uppercase tracking-widest ml-1">Email Address</label>
                                 <input
-                                    type="text"
-                                    placeholder="Captain John Doe"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    placeholder="name@luxury-travel.com"
                                     className="w-full bg-surface-container-low border-none rounded-md py-3 px-5 focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline-variant text-on-surface"
                                 />
                             </div>
                         )}
 
-                        {/* Email Address */}
-                        <div className="space-y-1.5">
-                            <label className="block text-on-surface-variant text-xs font-bold uppercase tracking-widest ml-1">Email Address</label>
-                            <input
-                                type="email"
-                                placeholder="name@luxury-travel.com"
-                                className="w-full bg-surface-container-low border-none rounded-md py-3 px-5 focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline-variant text-on-surface"
-                            />
-                        </div>
 
                         {/* Password */}
                         <div className="space-y-1.5">
@@ -87,6 +128,9 @@ export default function AuthPage() {
                             <div className="relative">
                                 <input
                                     type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
                                     placeholder="••••••••"
                                     className="w-full bg-surface-container-low border-none rounded-md py-3 pl-5 pr-12 focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline-variant text-on-surface"
                                 />
@@ -109,6 +153,9 @@ export default function AuthPage() {
                                 <div className="relative">
                                     <input
                                         type={showConfirmPassword ? "text" : "password"}
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        required
                                         placeholder="••••••••"
                                         className="w-full bg-surface-container-low border-none rounded-md py-3 pl-5 pr-12 focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline-variant text-on-surface"
                                     />
@@ -136,7 +183,7 @@ export default function AuthPage() {
                         </button>
                     </form>
 
-                    {/* Divider */}
+                    {/* Divider & Social Auth */}
                     <div className="relative my-8 flex justify-center items-center">
                         <div className="absolute w-full h-[1px] bg-surface-container-high" />
                         <span className="relative bg-surface-container-lowest px-4 text-[10px] uppercase tracking-[0.3em] font-bold text-outline-variant">
@@ -144,7 +191,6 @@ export default function AuthPage() {
                         </span>
                     </div>
 
-                    {/* Social Auth Button */}
                     <button className="w-full bg-surface-container-high text-on-secondary-container font-headline font-bold py-3.5 rounded-full flex items-center justify-center gap-3 hover:bg-surface-container-highest transition-colors">
                         <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="G" className="w-4 h-4" />
                         Sign in with Google
