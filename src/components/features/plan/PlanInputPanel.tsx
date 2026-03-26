@@ -28,17 +28,17 @@ export default function PlanInputPanel({ formData, onChange, onSubmit }: PlanInp
     <div className="w-full h-full overflow-y-auto p-4 md:p-8 lg:p-12 space-y-10 border-r border-surface-container no-scrollbar">
       {/* Header */}
       <div className="space-y-2">
-        <h2 className="font-headline font-extrabold text-3xl text-primary">Define Your Escape</h2>
+        <h2 className="font-headline font-extrabold text-3xl text-primary">나만의 여행 설계</h2>
         <p className="font-body text-on-surface-variant max-w-sm text-sm leading-relaxed">
-          Tell us where you dream of going. Our AI will craft a bespoke itinerary just for you.
+          꿈꾸는 여행지를 알려주세요. AI가 맞춤형 일정을 만들어드립니다.
         </p>
       </div>
 
       {/* Destination */}
-      <FormField label="Destination" icon="location_on">
+      <FormField label="여행지" icon="location_on">
         <input
           type="text"
-          placeholder="Where would you like to go?"
+          placeholder="어디로 떠나고 싶으신가요?"
           value={formData.destination}
           onChange={(e) => onChange({ destination: e.target.value })}
           className={inputBase}
@@ -46,10 +46,10 @@ export default function PlanInputPanel({ formData, onChange, onSubmit }: PlanInp
       </FormField>
 
       {/* Travel Dates */}
-      <FormField label="Travel Dates" icon="calendar_today">
+      <FormField label="여행 날짜" icon="calendar_today">
         <div className="flex gap-4">
           <div className="flex-1 space-y-1">
-            <p className="text-[10px] text-outline-variant uppercase tracking-widest">Departure</p>
+            <p className="text-[10px] text-outline-variant uppercase tracking-widest">출발일</p>
             <input
               type="date"
               value={formData.departureDate}
@@ -58,7 +58,7 @@ export default function PlanInputPanel({ formData, onChange, onSubmit }: PlanInp
             />
           </div>
           <div className="flex-1 space-y-1">
-            <p className="text-[10px] text-outline-variant uppercase tracking-widest">Return</p>
+            <p className="text-[10px] text-outline-variant uppercase tracking-widest">귀국일</p>
             <input
               type="date"
               value={formData.returnDate}
@@ -70,7 +70,7 @@ export default function PlanInputPanel({ formData, onChange, onSubmit }: PlanInp
       </FormField>
 
       {/* Budget Range */}
-      <FormField label="Budget Range" icon="payments">
+      <FormField label="예산 범위" icon="payments">
         <RangeSlider
           min={1000}
           max={20000}
@@ -82,7 +82,7 @@ export default function PlanInputPanel({ formData, onChange, onSubmit }: PlanInp
       </FormField>
 
       {/* Travel Style & Interests */}
-      <FormField label="Travel Style & Interests" icon="local_activity">
+      <FormField label="여행 스타일 & 관심사" icon="local_activity">
         <div className="flex flex-wrap gap-2">
           {formData.interests.map((tag) => (
             <TagChip
@@ -96,16 +96,16 @@ export default function PlanInputPanel({ formData, onChange, onSubmit }: PlanInp
             type="button"
             className="px-4 py-1.5 rounded-full text-xs font-semibold border border-dashed border-outline-variant text-outline-variant hover:border-primary hover:text-primary transition-colors cursor-pointer"
           >
-            + more
+            + 더보기
           </button>
         </div>
       </FormField>
 
       {/* Additional Context */}
-      <FormField label="Additional Context" icon="notes">
+      <FormField label="추가 요청사항" icon="notes">
         <textarea
           rows={4}
-          placeholder="Any special requests, dietary restrictions, or travel preferences..."
+          placeholder="특별 요청, 식이 제한, 또는 여행 선호도를 자유롭게 적어주세요..."
           value={formData.additionalContext}
           onChange={(e) => onChange({ additionalContext: e.target.value })}
           className={`${inputBase} resize-none`}
@@ -118,7 +118,7 @@ export default function PlanInputPanel({ formData, onChange, onSubmit }: PlanInp
         onClick={onSubmit}
         className="w-full bg-primary text-on-primary py-4 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all font-body"
       >
-        Generate Itinerary
+        일정 생성하기
       </button>
     </div>
   );

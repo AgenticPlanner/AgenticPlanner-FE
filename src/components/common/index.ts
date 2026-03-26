@@ -8,3 +8,7 @@ export { default as ChatInput } from './ChatInput';
 export { default as ResizeDivider } from './ResizeDivider';
 export { default as MobileBottomNav } from './MobileBottomNav';
 export type { MobileNavItem } from './MobileBottomNav';
+export { default as ProtectedRoute } from './ProtectedRoute';
+export { default as LoadingSpinner } from './LoadingSpinner';
+export { default as ErrorMessage } from './ErrorMessage';
+export { default as LoadingSkeleton } from './LoadingSkeleton';

@@ -1,17 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import type { PlanFormData, ChatMessage } from '@/types';
+import { useNavigate } from 'react-router-dom';
+import type { PlanFormData } from '@/types';
 import { AppLayout } from '@/components/layout';
 import { PlanInputPanel, CaptainBeanChat } from '@/components/features/plan';
 import { ResizeDivider } from '@/components/common';
 import { usePanelResize } from '@/hooks/usePanelResize';
-import {
-  defaultInterestTags,
-  initialChatMessages,
-  BUDGET_MIN,
-  BUDGET_MAX,
-} from '@/data/tripData';
+import { useAgentChat } from '@/hooks/useAgentChat';
+import { usePlans } from '@/hooks/usePlans';
+import { defaultInterestTags, BUDGET_MIN, BUDGET_MAX } from '@/data/tripData';
 
 export default function PlanPage() {
+  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -41,28 +40,24 @@ export default function PlanPage() {
     additionalContext: '',
   });
 
-  const [messages, setMessages] = useState<ChatMessage[]>(initialChatMessages);
-
-  const handleSendMessage = (content: string) => {
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-    setMessages((prev) => [...prev, userMsg]);
-  };
+  const { messages, isStreaming, sendMessage, stopStreaming } = useAgentChat();
+  const { createPlan } = usePlans();
 
   const handleFormChange = (updated: Partial<PlanFormData>) => {
     setFormData((prev) => ({ ...prev, ...updated }));
   };
 
-  const handleGenerateItinerary = () => {
-    console.log('Generate:', formData);
+  const handleGenerateItinerary = async () => {
+    try {
+      const plan = await createPlan({ title: formData.destination || '새 여행 플랜' });
+      navigate(`/itinerary?planId=${plan.id}`);
+    } catch {
+      // 에러는 usePlans 내부에서 관리
+    }
   };
 
   return (
-    <AppLayout topBarTitle="Plan">
+    <AppLayout topBarTitle="플랜">
       <div
         ref={containerRef}
         className={`flex overflow-hidden bg-surface h-[calc(100vh-5rem)] ${
@@ -90,7 +85,12 @@ export default function PlanPage() {
           className="hidden md:flex h-full"
         />
         <div className="hidden md:flex flex-col flex-1 min-w-0 h-full">
-          <CaptainBeanChat messages={messages} onSendMessage={handleSendMessage} />
+          <CaptainBeanChat
+            messages={messages}
+            onSendMessage={sendMessage}
+            isStreaming={isStreaming}
+            onUnmount={stopStreaming}
+          />
         </div>
       </div>
     </AppLayout>

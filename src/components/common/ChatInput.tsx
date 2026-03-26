@@ -5,13 +5,15 @@ interface ChatInputProps {
   onChange: (value: string) => void;
   onSubmit: () => void;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export default function ChatInput({
   value,
   onChange,
   onSubmit,
-  placeholder = 'Ask Captain Bean anything...',
+  placeholder = '캡틴 빈에게 무엇이든 물어보세요...',
+  disabled = false,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -25,7 +27,7 @@ export default function ChatInput({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (value.trim()) {
+      if (value.trim() && !disabled) {
         onSubmit();
         if (textareaRef.current) {
           textareaRef.current.style.height = 'auto';
@@ -35,7 +37,7 @@ export default function ChatInput({
   };
 
   const handleSend = () => {
-    if (value.trim()) {
+    if (value.trim() && !disabled) {
       onSubmit();
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
@@ -70,7 +72,8 @@ export default function ChatInput({
         <button
           type="button"
           onClick={handleSend}
-          className="bg-primary text-on-primary p-2 rounded-xl hover:scale-105 transition-all"
+          disabled={disabled}
+          className="bg-primary text-on-primary p-2 rounded-xl hover:scale-105 transition-all disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed"
         >
           <span className="material-symbols-outlined text-lg">send</span>
         </button>
