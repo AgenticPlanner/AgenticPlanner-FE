@@ -5,6 +5,7 @@ import LandingPage from './pages/LandingPage';
 const AuthPage = lazy(() => import('./pages/AuthPage'));
 const TaskPage = lazy(() => import('./pages/TaskPage'));
 const ItineraryPage = lazy(() => import('./pages/ItineraryPage'));
+const PlanPage = lazy(() => import('./pages/PlanPage'));
 
 const Spinner = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -37,6 +38,14 @@ export default function App() {
         element={
           <Suspense fallback={<Spinner />}>
             <ItineraryPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/plan"
+        element={
+          <Suspense fallback={<Spinner />}>
+            <PlanPage />
           </Suspense>
         }
       />

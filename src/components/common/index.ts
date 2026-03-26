@@ -3,3 +3,8 @@ export { default as FABGroup } from './FABGroup';
 export { default as ProgressBar } from './ProgressBar';
 export { default as EmptySlot } from './EmptySlot';
 export { default as CategoryIcon } from './CategoryIcon';
+export { default as ChatBubble } from './ChatBubble';
+export { default as ChatInput } from './ChatInput';
+export { default as ResizeDivider } from './ResizeDivider';
+export { default as MobileBottomNav } from './MobileBottomNav';
+export type { MobileNavItem } from './MobileBottomNav';

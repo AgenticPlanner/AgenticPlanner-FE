@@ -4,3 +4,6 @@ export { default as Chip } from './Chip';
 export { default as Card } from './Card';
 export { default as SectionHeader } from './SectionHeader';
 export { default as StatRow } from './StatRow';
+export { default as RangeSlider } from './RangeSlider';
+export { default as TagChip } from './TagChip';
+export { default as FormField } from './FormField';

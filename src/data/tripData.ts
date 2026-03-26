@@ -1,4 +1,4 @@
-import type { TripDay, Task } from '../types/index';
+import type { TripDay, Task, InterestTag, ChatMessage } from '../types/index';
 
 export const tripDays: TripDay[] = [
   {
@@ -256,3 +256,30 @@ export const tripTasks: Task[] = [
 ];
 
 export const tasks = tripTasks;
+
+export const defaultInterestTags: InterestTag[] = [
+  { id: 'hiking',       label: 'hiking',       selected: true  },
+  { id: 'local-food',   label: 'local food',   selected: true  },
+  { id: 'tech-spots',   label: 'tech-spots',   selected: true  },
+  { id: 'architecture', label: 'architecture', selected: false },
+  { id: 'nightlife',    label: 'nightlife',    selected: false },
+];
+
+export const initialChatMessages: ChatMessage[] = [
+  {
+    id: 'greeting',
+    role: 'ai',
+    content: "Hello! I'm Captain Bean. Tell me about your dream journey or use the panel on the left to get started.\n\nI can help you optimize travel routes, find hidden local gems, or balance a tight budget with premium experiences. What's on your mind today?",
+    timestamp: 'Just Now',
+  },
+];
+
+export const suggestionChips: string[] = [
+  "Suggest a 5-day Tokyo itinerary",
+  "Find quiet beaches in Portugal",
+  "Pet-friendly hotels in Aspen",
+];
+
+export const BUDGET_MIN = 1000;
+export const BUDGET_MAX = 20000;
+export const BUDGET_STEP = 500;
