@@ -1,25 +1,28 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AppLayout } from '../components/layout';
-import { DaySelector, TimelineThread, StopCard, DaySidebar } from '../components/features/itinerary';
-import { FABGroup, ResizeDivider } from '../components/common';
-import { usePanelResize } from '../hooks/usePanelResize';
-import { usePlanDetail } from '../hooks/usePlans';
-import { tripDays as mockTripDays } from '../data/tripData';
+import { AppLayout } from '@/components/layout';
+import { DaySelector, TimelineThread, StopCard, DaySidebar } from '@/components/features/itinerary';
+import { FABGroup, ResizeDivider } from '@/components/common';
+import { usePanelResize } from '@/hooks/usePanelResize';
+import { usePlanDetail } from '@/hooks/usePlans';
+import { tripDays as mockTripDays } from '@/data/tripData';
 
 type ItineraryMobileTab = 'timeline' | 'sidebar';
 
 export default function ItineraryPage() {
   const [searchParams] = useSearchParams();
-  const planId = searchParams.get('planId') ? Number(searchParams.get('planId')) : null;
-
-  const { tripDays, isLoading, error } = usePlanDetail(planId);
+  const planId = searchParams.get('planId');
+  const { plan, tripDays, isLoading, error } = usePlanDetail(planId);
   // planId 없거나 로딩 중엔 mock 데이터 사용
-  const days = tripDays.length > 0 ? tripDays : mockTripDays;
+  const days = tripDays && tripDays.length > 0 ? tripDays : mockTripDays;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
-  const activeDay = days[activeDayIndex];
+  const activeDay = days[activeDayIndex] || null;
+  // DB의 items를 우선순위로 두고 없으면 mock의 stops 사용
+  const currentStops = (activeDay as any)?.items || activeDay?.stops || [];
+
   const [mobileTab, setMobileTab] = useState<ItineraryMobileTab>('timeline');
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -40,7 +43,7 @@ export default function ItineraryPage() {
   });
 
   return (
-    <AppLayout topBarTitle="일정">
+    <AppLayout topBarTitle={plan?.title || '일정'}>
       <div className="pt-8 px-4 md:px-12 pb-20 max-w-6xl w-full mx-auto">
         {/* 로딩 상태 */}
         {isLoading && (
@@ -61,10 +64,10 @@ export default function ItineraryPage() {
             {/* Hero Section */}
             <div className="mb-10 md:mb-16">
               <span className="block text-primary font-bold tracking-widest text-xs uppercase mb-2">
-                태평양 해안 투어
+                {plan?.description || '태평양 해안 투어'}
               </span>
               <h3 className="font-headline font-extrabold text-4xl md:text-5xl text-on-surface mb-8 md:mb-10">
-                여행 일정
+                {plan?.title || '여행 일정'}
               </h3>
 
               {/* Day Selector — horizontal scroll on mobile */}
@@ -84,11 +87,10 @@ export default function ItineraryPage() {
                   key={tab}
                   type="button"
                   onClick={() => setMobileTab(tab)}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                    mobileTab === tab
-                      ? 'bg-surface-container-lowest text-primary shadow-ambient'
-                      : 'text-on-surface-variant'
-                  }`}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${mobileTab === tab
+                    ? 'bg-surface-container-lowest text-primary shadow-ambient'
+                    : 'text-on-surface-variant'
+                    }`}
                 >
                   {tab === 'timeline' ? 'Timeline' : 'Stats'}
                 </button>
@@ -131,7 +133,7 @@ export default function ItineraryPage() {
             </div>
 
             {/* Floating Action Buttons */}
-            <FABGroup onShare={() => {}} onAdd={() => {}} addIcon="add_task" />
+            <FABGroup onShare={() => { }} onAdd={() => { }} addIcon="add_task" />
           </>
         )}
       </div>
