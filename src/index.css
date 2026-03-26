@@ -76,6 +76,7 @@
   /* Shadows */
   --shadow-ambient: 0 8px 24px -4px rgba(44, 52, 54, 0.06);
   --shadow-float: 0 20px 40px -10px rgba(16, 106, 104, 0.18);
+  --shadow-bottom-nav: 0 -4px 20px rgba(0, 0, 0, 0.06);
 }
 
 @layer utilities {
@@ -105,6 +106,10 @@
 
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
 }
 
 body {

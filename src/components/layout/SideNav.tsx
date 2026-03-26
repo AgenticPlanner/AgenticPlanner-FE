@@ -4,16 +4,24 @@ interface NavItem {
   icon: string;
   label: string;
   href: string;
+  action?: 'chat';
+}
+
+interface SideNavProps {
+  width?: number;
+  onOpenChat?: () => void;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { icon: 'checklist', label: '작업', href: '/tasks' },
-  { icon: 'route', label: '일정', href: '/itinerary' },
-  { icon: 'map', label: '지도', href: '#' },
-  { icon: 'explore', label: '탐색', href: '#' },
+  { icon: 'checklist', label: '작업',  href: '/tasks'     },
+  { icon: 'route',     label: '일정',  href: '/itinerary' },
+  { icon: 'edit_note', label: 'Plan',  href: '/plan'      },
+  { icon: 'smart_toy', label: 'Chat',  href: '#', action: 'chat' },
+  { icon: 'map',       label: '지도',  href: '#'          },
+  { icon: 'explore',   label: '탐색',  href: '#'          },
 ];
 
-export default function SideNav() {
+export default function SideNav({ width, onOpenChat }: SideNavProps) {
   const location = useLocation();
 
   const isActive = (href: string) => {
@@ -21,8 +29,21 @@ export default function SideNav() {
     return location.pathname.startsWith(href);
   };
 
+  const navItemClass = (active: boolean) =>
+    `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 w-full text-left ${
+      active
+        ? 'bg-surface-container-lowest shadow-ambient text-primary'
+        : 'text-outline-variant hover:bg-surface-container-low hover:translate-x-1'
+    }`;
+
+  const iconClass = (active: boolean) =>
+    `material-symbols-outlined text-lg flex-shrink-0 ${active ? 'text-primary' : 'text-outline-variant'}`;
+
   return (
-    <aside className="sticky top-0 w-72 h-screen bg-surface-container-lowest flex flex-col py-6 px-4">
+    <aside
+      className="sticky top-0 h-screen bg-surface-container-lowest hidden md:flex flex-col py-6 px-4 flex-shrink-0"
+      style={{ width: width ?? 288 }}
+    >
       {/* Top Section - Logo */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-lg signature-gradient flex items-center justify-center flex-shrink-0">
@@ -39,19 +60,27 @@ export default function SideNav() {
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.href);
 
+          if (item.action === 'chat') {
+            return (
+              <button
+                key="chat"
+                type="button"
+                onClick={onOpenChat}
+                className={navItemClass(false)}
+              >
+                <span className={iconClass(false)}>{item.icon}</span>
+                <span className="font-body font-medium text-sm">{item.label}</span>
+              </button>
+            );
+          }
+
           return (
             <Link
-              key={item.href}
+              key={item.href + item.label}
               to={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                active
-                  ? 'bg-surface-container-lowest shadow-ambient text-primary'
-                  : 'text-outline-variant hover:bg-surface-container-low hover:translate-x-1'
-              }`}
+              className={navItemClass(active)}
             >
-              <span className={`material-symbols-outlined text-lg flex-shrink-0 ${active ? 'text-primary' : 'text-outline-variant'}`}>
-                {item.icon}
-              </span>
+              <span className={iconClass(active)}>{item.icon}</span>
               <span className="font-body font-medium text-sm">{item.label}</span>
             </Link>
           );
@@ -60,6 +89,23 @@ export default function SideNav() {
 
       {/* Bottom Section */}
       <div className="space-y-4 pt-4 border-t border-surface-container">
+        {/* Captain Bean AI Card */}
+        <button
+          type="button"
+          onClick={onOpenChat}
+          className="w-full bg-surface-container-low rounded-xl p-3 flex items-center gap-3 hover:bg-surface-container transition-colors text-left"
+        >
+          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-on-primary-fixed text-lg">smart_toy</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-headline font-bold text-sm text-on-surface leading-tight">Captain Bean AI</p>
+            <p className="text-[10px] text-on-surface-variant uppercase tracking-wider truncate">
+              AI Travel Concierge
+            </p>
+          </div>
+        </button>
+
         {/* Plan New Leg Button */}
         <button className="w-full signature-gradient rounded-full py-3 flex items-center justify-center gap-2 hover:shadow-float transition-shadow duration-300">
           <span className="material-symbols-outlined text-on-primary text-lg">add</span>

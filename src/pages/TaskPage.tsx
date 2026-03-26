@@ -5,13 +5,12 @@ import { ProgressBar, EmptySlot } from '../components/common';
 import { tripTasks } from '../data/tripData';
 
 export default function TaskPage() {
-  // Calculate progress percentage
-  const doneCount = tripTasks.filter(task => task.status === 'done').length;
+  const doneCount = tripTasks.filter((task) => task.status === 'done').length;
   const progressPercentage = Math.round((doneCount / tripTasks.length) * 100);
 
   return (
     <AppLayout topBarTitle="작업">
-      <div className="px-10 py-12 max-w-7xl mx-auto w-full">
+      <div className="px-4 py-6 md:px-10 md:py-12 max-w-7xl mx-auto w-full">
         {/* Hero Section */}
         <div className="mb-16">
           <SectionHeader
@@ -28,25 +27,18 @@ export default function TaskPage() {
               </div>
             }
           />
-
-          {/* Progress bar */}
           <div className="mt-8">
             <ProgressBar value={progressPercentage} showLabel={false} />
           </div>
         </div>
 
         {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Featured task (in-progress) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           <TaskCard task={tripTasks[0]} featured={true} />
-
-          {/* Standard tasks */}
           <TaskCard task={tripTasks[1]} />
           <TaskCard task={tripTasks[2]} />
           <TaskCard task={tripTasks[3]} />
           <TaskCard task={tripTasks[4]} />
-
-          {/* Add Milestone placeholder */}
           <EmptySlot label="마일스톤 추가" icon="add" />
         </div>
       </div>

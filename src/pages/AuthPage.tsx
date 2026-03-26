@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { loginUser, registerUser } from '@/api/auth';
+import { useAuth } from '@/contexts/AuthContext';
+import type { APIError } from '@/types/api';
 
 export default function AuthPage() {
     const navigate = useNavigate();
+    const { login, register } = useAuth();
 
     const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [user_name, setUser_name] = useState('');
     const [email, setEmail] = useState('');
@@ -18,21 +22,25 @@ export default function AuthPage() {
 
     const handleAuthSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorMsg('');
+        setIsSubmitting(true);
         try {
             if (isSignIn) {
-                await loginUser(user_name, password);
-                navigate('/itinerary');
+                await login(user_name, password);
+                navigate('/plan');
             } else {
                 if (password !== confirmPassword) {
-                    alert("비밀번호가 일치하지 않습니다.");
+                    setErrorMsg('비밀번호가 일치하지 않습니다.');
                     return;
                 }
-                await registerUser(email, password, user_name);
-                alert("회원가입이 완료되었습니다.");
+                await register(email, password, user_name);
                 handleModeSwitch('signin');
             }
-        } catch (error: any) {
-            alert(error.response?.data?.detail || "인증 실패");
+        } catch (err: unknown) {
+            const apiErr = (err as { response?: { data?: APIError } }).response?.data;
+            setErrorMsg(apiErr?.detail ?? apiErr?.message ?? '인증에 실패했습니다. 다시 시도해주세요.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -44,6 +52,7 @@ export default function AuthPage() {
         setUser_name('');
         setShowPassword(false);
         setShowConfirmPassword(false);
+        setErrorMsg('');
     };
 
     return (
@@ -172,14 +181,28 @@ export default function AuthPage() {
                             </div>
                         )}
 
+                        {/* Error message */}
+                        {errorMsg && (
+                            <p className="text-sm font-medium text-red-500 bg-red-50 rounded-lg px-4 py-2.5">
+                                {errorMsg}
+                            </p>
+                        )}
+
                         {/* Main CTA Button */}
                         <button
                             type="submit"
-                            className="w-full signature-gradient text-on-primary font-headline font-bold py-3.5 rounded-full mt-4 flex justify-center items-center gap-2 hover:scale-[1.02] transition-transform"
+                            disabled={isSubmitting}
+                            className="w-full signature-gradient text-on-primary font-headline font-bold py-3.5 rounded-full mt-4 flex justify-center items-center gap-2 hover:scale-[1.02] transition-transform disabled:opacity-60 disabled:scale-100"
                             style={{ boxShadow: '0 20px 40px -10px rgba(16, 106, 104, 0.4)' }}
                         >
-                            {isSignIn ? 'Sign In' : 'Create Account'}
-                            <span className="material-symbols-outlined">arrow_forward</span>
+                            {isSubmitting ? (
+                                <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-on-primary" />
+                            ) : (
+                                <>
+                                    {isSignIn ? 'Sign In' : 'Create Account'}
+                                    <span className="material-symbols-outlined">arrow_forward</span>
+                                </>
+                            )}
                         </button>
                     </form>
 

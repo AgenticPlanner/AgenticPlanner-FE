@@ -48,3 +48,26 @@ export interface TripDay {
   travelTime: string;
   tip?: string;
 }
+
+export type InterestTag = {
+  id: string;
+  label: string;
+  selected: boolean;
+};
+
+export interface PlanFormData {
+  destination: string;
+  departureDate: string;
+  returnDate: string;
+  budgetMin: number;
+  budgetMax: number;
+  interests: InterestTag[];
+  additionalContext: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'ai' | 'user';
+  content: string;
+  timestamp: string;
+}
