@@ -50,16 +50,23 @@ export const usePlanDetail = (planId: string | null) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!planId) return;
+    if (!planId) {
+      setIsLoading(false);
+      setTripDays([]); // 이전 데이터 초기화
+      setPlan(null);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
 
     const fetchAll = async () => {
+      // console.log('1. getPlan, getDays 호출');
       const [fetchedPlan, days] = await Promise.all([
         getPlan(planId),
         getDays(planId),
       ]);
+      // console.log('2. 기본 정보 로드 완료:', { fetchedPlan, days });
       setPlan(fetchedPlan);
 
       const daysWithItems = await Promise.all(
@@ -68,6 +75,7 @@ export const usePlanDetail = (planId: string | null) => {
           return adaptDayToTripDay(day, items);
         })
       );
+      // console.log('3. daysWithItems:', { daysWithItems });
       setTripDays(daysWithItems);
     };
 
