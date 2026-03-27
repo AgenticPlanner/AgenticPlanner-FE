@@ -25,13 +25,13 @@ export interface Task {
 export interface ItineraryStop {
   id: string;
   time: string;
-  category: 'dining' | 'transit' | 'sightseeing' | 'stay';
+  category: 'dining' | 'transit' | 'sightseeing' | 'stay' | string;
   title: string;
   subtitle?: string;
   location?: string;
   description?: string;
   badge?: string;
-  imageUrl?: string;
+  imgUrl?: string;
   tags?: string[];
 }
 

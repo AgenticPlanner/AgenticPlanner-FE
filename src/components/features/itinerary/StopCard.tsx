@@ -47,7 +47,7 @@ export default function StopCard({ stop }: StopCardProps) {
   }
 
   // Sightseeing with image - split card layout
-  if (stop.category === 'sightseeing' && stop.imageUrl) {
+  if (stop.category === 'sightseeing' && stop.imgUrl) {
     return (
       <div className="relative pl-16 group">
         <div className="absolute left-0 top-0 z-10">
@@ -57,7 +57,7 @@ export default function StopCard({ stop }: StopCardProps) {
           <div className="flex flex-col md:flex-row">
             {/* Image section */}
             <img
-              src={stop.imageUrl}
+              src={stop.imgUrl}
               alt={stop.title}
               className="h-80 md:h-auto w-full md:w-1/3 object-cover"
             />

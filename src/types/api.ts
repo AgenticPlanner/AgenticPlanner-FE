@@ -32,12 +32,20 @@ export interface APIPlanItem {
   id: string;
   day: string;
   title: string;
+  subtitle?: string;
   description?: string;
-  time?: string;        // "HH:MM"
-  category: 'dining' | 'transit' | 'sightseeing' | 'stay';
+  start_time?: string;
+  end_time?: string;
+  order_index: number;
   location?: string;
-  image_url?: string;
-  order: number;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | string;
+  category: 'dining' | 'transit' | 'sightseeing' | 'stay' | string;
+  external_link?: string;
+  badge?: string;
+  tags?: string[];
+  amount?: number;
+  paid_at?: string;
+  img_url?: string;
 }
 
 // Agent
