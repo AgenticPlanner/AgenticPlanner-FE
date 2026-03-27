@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Spinner = () => (
@@ -13,7 +13,8 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isLoggedIn, isLoading } = useAuth();
+  const location = useLocation();
   if (isLoading) return <Spinner />;
-  if (!isLoggedIn) return <Navigate to="/auth" replace />;
+  if (!isLoggedIn) return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   return <>{children}</>;
 }

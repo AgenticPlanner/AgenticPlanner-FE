@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AuthPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { login, register } = useAuth();
 
     const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -76,7 +77,8 @@ export default function AuthPage() {
         try {
             if (isSignIn) {
                 await login(user_name, password);
-                navigate('/plan');
+                const from = (location.state as { from?: string } | null)?.from ?? '/plan';
+                navigate(from, { replace: true });
             } else {
                 await register(email, password, user_name);
                 handleModeSwitch('signin');

@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavItem {
   icon: string;
@@ -23,6 +24,8 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function SideNav({ width, onOpenChat }: SideNavProps) {
   const location = useLocation();
+  const { user } = useAuth();
+  const userInitial = user?.username?.charAt(0).toUpperCase() ?? '?';
 
   const isActive = (href: string) => {
     if (href === '#') return false;
@@ -114,14 +117,12 @@ export default function SideNav({ width, onOpenChat }: SideNavProps) {
 
         {/* User Profile Strip */}
         <div className="flex items-center gap-3 px-2">
-          <img
-            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop"
-            alt="Alex Rivera"
-            className="w-10 h-10 rounded-full ring-2 ring-white flex-shrink-0"
-          />
+          <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0">
+            <span className="font-headline font-bold text-on-primary-container text-sm">{userInitial}</span>
+          </div>
           <div className="flex-1 min-w-0">
-            <p className="font-body font-bold text-on-surface text-sm leading-tight">Alex Rivera</p>
-            <p className="text-outline-variant text-[11px] truncate">프리미엄 멤버</p>
+            <p className="font-body font-bold text-on-surface text-sm leading-tight">{user?.username ?? '—'}</p>
+            <p className="text-outline-variant text-[11px] truncate">{user?.email ?? ''}</p>
           </div>
           <button className="text-outline-variant hover:text-on-surface transition-colors p-1">
             <span className="material-symbols-outlined text-lg">more_vert</span>
