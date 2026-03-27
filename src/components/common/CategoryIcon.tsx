@@ -1,5 +1,5 @@
 interface CategoryIconProps {
-  category: 'dining' | 'transit' | 'sightseeing' | 'stay';
+  category: 'dining' | 'transit' | 'sightseeing' | 'stay' | string;
   size?: 'sm' | 'md';
 }
 
@@ -28,6 +28,12 @@ const getCategoryConfig = (category: CategoryIconProps['category']) => {
         bgColor: 'bg-secondary-container',
         textColor: 'text-on-secondary-container',
         icon: 'bed',
+      };
+    default:
+      return {
+        bgColor: 'bg-slate-100',
+        textColor: 'text-slate-600',
+        icon: 'location_on',
       };
   }
 };

@@ -28,7 +28,7 @@ export const usePlans = () => {
     return plan;
   };
 
-  const handleInvitePlan = async (id: number) => {
+  const handleInvitePlan = async (id: string) => {
     const { invite_code } = await invitePlan(id);
     return invite_code;
   };
@@ -43,10 +43,10 @@ export const usePlans = () => {
   };
 };
 
-export const usePlanDetail = (planId: number | null) => {
+export const usePlanDetail = (planId: string | null) => {
   const [tripDays, setTripDays] = useState<TripDay[]>([]);
   const [plan, setPlan] = useState<APIPlan | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

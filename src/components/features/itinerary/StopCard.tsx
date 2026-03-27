@@ -16,6 +16,7 @@ const getCategoryLabel = (category: ItineraryStop['category']) => {
       return '관광';
     case 'stay':
       return '숙박';
+    default: return '장소';
   }
 };
 

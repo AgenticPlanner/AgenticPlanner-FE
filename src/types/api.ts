@@ -5,14 +5,14 @@ export interface AuthTokens {
 }
 
 export interface UserMe {
-  id: number;
+  id: string;
   username: string;
   email: string;
 }
 
 // Plans
 export interface APIPlan {
-  id: number;
+  id: string;
   title: string;
   description?: string;
   invite_code?: string;
@@ -21,16 +21,16 @@ export interface APIPlan {
 }
 
 export interface APIPlanDay {
-  id: number;
-  plan: number;
+  id: string;
+  plan: string;
   date: string;         // "YYYY-MM-DD"
   day_number: number;
   title?: string;
 }
 
 export interface APIPlanItem {
-  id: number;
-  day: number;
+  id: string;
+  day: string;
   title: string;
   description?: string;
   time?: string;        // "HH:MM"
