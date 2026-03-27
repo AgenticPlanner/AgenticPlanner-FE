@@ -5,23 +5,23 @@ import { AppLayout } from '@/components/layout';
 import { DaySelector, TimelineThread, StopCard, DaySidebar } from '@/components/features/itinerary';
 import { FABGroup, ResizeDivider } from '@/components/common';
 import { usePanelResize } from '@/hooks/usePanelResize';
-import { usePlanDetail } from '@/hooks/usePlans';
-import { tripDays as mockTripDays } from '@/data/tripData';
+import { usePlans, usePlanDetail } from '@/hooks/usePlans';
 
 type ItineraryMobileTab = 'timeline' | 'sidebar';
 
 export default function ItineraryPage() {
   const [searchParams] = useSearchParams();
-  const planId = searchParams.get('planId');
-  const { plan, tripDays, isLoading, error } = usePlanDetail(planId);
-  // planId 없거나 로딩 중엔 mock 데이터 사용
-  const days = tripDays && tripDays.length > 0 ? tripDays : mockTripDays;
+  const planIdParam = searchParams.get('planId');
+
+  const { plans } = usePlans();
+  const activePlanId = planIdParam || plans[0]?.id || null;
+
+  const { plan, tripDays, isLoading, error } = usePlanDetail(activePlanId);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
-  const activeDay = days[activeDayIndex] || null;
-  // DB의 items를 우선순위로 두고 없으면 mock의 stops 사용
-  const currentStops = (activeDay as any)?.items || activeDay?.stops || [];
+  const activeDay = tripDays[activeDayIndex] ?? null;
+  const currentStops = activeDay?.stops ?? [];
 
   const [mobileTab, setMobileTab] = useState<ItineraryMobileTab>('timeline');
 
@@ -59,12 +59,21 @@ export default function ItineraryPage() {
           </div>
         )}
 
-        {!isLoading && (
+        {/* 빈 상태 */}
+        {!isLoading && !error && tripDays.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-32 text-center">
+            <span className="material-symbols-outlined text-5xl text-outline-variant mb-4">map</span>
+            <p className="font-headline font-bold text-xl text-on-surface mb-2">아직 일정이 없어요</p>
+            <p className="text-on-surface-variant text-sm">Plan 페이지에서 Generate Itinerary로 일정을 만들어보세요.</p>
+          </div>
+        )}
+
+        {!isLoading && tripDays.length > 0 && activeDay && (
           <>
             {/* Hero Section */}
             <div className="mb-10 md:mb-16">
               <span className="block text-primary font-bold tracking-widest text-xs uppercase mb-2">
-                {plan?.description || '태평양 해안 투어'}
+                {plan?.description || '여행 일정'}
               </span>
               <h3 className="font-headline font-extrabold text-4xl md:text-5xl text-on-surface mb-8 md:mb-10">
                 {plan?.title || '여행 일정'}
@@ -73,7 +82,7 @@ export default function ItineraryPage() {
               {/* Day Selector — horizontal scroll on mobile */}
               <div className="overflow-x-auto no-scrollbar">
                 <DaySelector
-                  days={days}
+                  days={tripDays}
                   activeDayIndex={activeDayIndex}
                   onSelect={setActiveDayIndex}
                 />
@@ -109,9 +118,12 @@ export default function ItineraryPage() {
               >
                 <div className="space-y-12 relative" key={activeDayIndex}>
                   <TimelineThread />
-                  {activeDay.stops.map((stop) => (
+                  {currentStops.map((stop) => (
                     <StopCard key={stop.id} stop={stop} />
                   ))}
+                  {currentStops.length === 0 && (
+                    <p className="text-on-surface-variant text-sm py-8 text-center">이 날의 일정이 없습니다.</p>
+                  )}
                 </div>
               </div>
 
