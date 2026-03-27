@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import type { ChatMessage } from '@/types';
 import { ChatBubble, ChatInput } from '@/components/common';
-import { initialChatMessages, suggestionChips } from '@/data/tripData';
+import { suggestionChips } from '@/data/tripData';
+import { useChatContext } from '@/contexts/ChatContext';
 
 interface ChatPopoutProps {
   isOpen: boolean;
@@ -9,18 +9,12 @@ interface ChatPopoutProps {
 }
 
 export default function ChatPopout({ isOpen, onClose }: ChatPopoutProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialChatMessages);
+  const { messages, isStreaming, sendMessage } = useChatContext();
   const [inputValue, setInputValue] = useState('');
 
   const handleSend = (content: string) => {
-    if (!content.trim()) return;
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: content.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-    setMessages((prev) => [...prev, userMsg]);
+    if (!content.trim() || isStreaming) return;
+    sendMessage(content.trim());
     setInputValue('');
   };
 
@@ -75,7 +69,8 @@ export default function ChatPopout({ isOpen, onClose }: ChatPopoutProps) {
                       key={chip}
                       type="button"
                       onClick={() => handleSend(chip)}
-                      className="text-xs bg-white border border-surface-container px-3 py-1.5 rounded-full text-on-surface-variant hover:border-primary transition-colors font-body"
+                      disabled={isStreaming}
+                      className="text-xs bg-white border border-surface-container px-3 py-1.5 rounded-full text-on-surface-variant hover:border-primary transition-colors font-body disabled:opacity-50"
                     >
                       {chip}
                     </button>
@@ -92,6 +87,7 @@ export default function ChatPopout({ isOpen, onClose }: ChatPopoutProps) {
             value={inputValue}
             onChange={setInputValue}
             onSubmit={() => handleSend(inputValue)}
+            disabled={isStreaming}
           />
           <p className="text-center text-[10px] text-outline-variant uppercase tracking-widest mt-2">
             Powered by Serene Intelligence v4.2
