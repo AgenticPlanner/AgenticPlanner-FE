@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import { AuthProvider } from './contexts/AuthContext';
+import { ChatProvider } from './contexts/ChatContext';
 import { ProtectedRoute } from './components/common';
 
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -18,6 +19,7 @@ const Spinner = () => (
 export default function App() {
   return (
     <AuthProvider>
+      <ChatProvider>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route
@@ -59,6 +61,7 @@ export default function App() {
           }
         />
       </Routes>
+      </ChatProvider>
     </AuthProvider>
   );
 }

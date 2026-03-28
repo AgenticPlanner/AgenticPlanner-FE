@@ -1,4 +1,8 @@
-import type { TripDay, Task, InterestTag, ChatMessage } from '../types/index';
+import type { InterestTag, ChatMessage } from '../types/index';
+
+// tripDays / tripTasks는 실제 API(usePlanDetail)로 교체됨 — mock 비활성화
+/*
+import type { TripDay, Task } from '../types/index';
 
 export const tripDays: TripDay[] = [
   {
@@ -256,6 +260,7 @@ export const tripTasks: Task[] = [
 ];
 
 export const tasks = tripTasks;
+*/
 
 export const defaultInterestTags: InterestTag[] = [
   { id: 'hiking',       label: '하이킹',       selected: true  },

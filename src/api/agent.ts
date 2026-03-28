@@ -42,20 +42,26 @@ export const streamChat = async (
 
     const lines = decoder.decode(value).split('\n');
     for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') { onDone(); return; }
-        try {
-          const parsed = JSON.parse(data) as Record<string, unknown>;
-          const text =
-            (parsed.content as string | undefined) ??
-            (parsed.text as string | undefined) ??
-            (parsed.delta as string | undefined) ??
-            data;
-          if (text) onChunk(text);
-        } catch {
-          if (data) onChunk(data);
+      if (!line.startsWith('data: ')) continue;
+      const raw = line.slice(6).trim();
+      if (!raw || raw === '[DONE]') continue;
+
+      try {
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+
+        if (parsed.type === 'delta' && parsed.delta) {
+          onChunk(parsed.delta as string);
         }
+        if (parsed.type === 'done') {
+          onDone();
+          return;
+        }
+        if (parsed.type === 'error') {
+          throw new Error((parsed.error as string | undefined) ?? 'SSE 에러');
+        }
+      } catch (e) {
+        if (e instanceof SyntaxError) continue; // JSON이 아닌 쓰레기 데이터 무시
+        throw e;
       }
     }
   }
