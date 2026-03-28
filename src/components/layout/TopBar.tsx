@@ -1,8 +1,16 @@
+import { useLocation } from 'react-router-dom';
+import { PlanSelector } from '@/components/common';
+
 interface TopBarProps {
   title?: string;
 }
 
+const PLAN_ROUTES = ['/itinerary', '/tasks'];
+
 export default function TopBar({ title = 'Agentic Planner' }: TopBarProps) {
+  const { pathname } = useLocation();
+  const showPlanSelector = PLAN_ROUTES.some(r => pathname.startsWith(r));
+
   return (
     <header className="sticky top-0 h-20 bg-surface-container-lowest/80 backdrop-blur-xl z-40 flex items-center px-8 gap-8 border-b border-surface-container">
       {/* Left Section */}
@@ -24,13 +32,16 @@ export default function TopBar({ title = 'Agentic Planner' }: TopBarProps) {
 
       {/* Right Section */}
       <div className="flex items-center gap-2">
+        {/* Plan Selector — itinerary, tasks 페이지에서만 노출 */}
+        {showPlanSelector && <PlanSelector />}
+
         {/* Notifications Button */}
-        <button className="p-2 hover:bg-surface-container-low rounded-full transition-colors duration-200">
+        <button type="button" className="p-2 hover:bg-surface-container-low rounded-full transition-colors duration-200">
           <span className="material-symbols-outlined text-on-surface-variant text-lg">notifications</span>
         </button>
 
         {/* Settings Button */}
-        <button className="p-2 hover:bg-surface-container-low rounded-full transition-colors duration-200">
+        <button type="button" className="p-2 hover:bg-surface-container-low rounded-full transition-colors duration-200">
           <span className="material-symbols-outlined text-on-surface-variant text-lg">settings</span>
         </button>
       </div>
