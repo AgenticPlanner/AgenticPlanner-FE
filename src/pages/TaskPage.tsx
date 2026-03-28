@@ -1,39 +1,72 @@
+import { useNavigate } from 'react-router-dom';
 import type { Task } from '../types/index';
-import type { ItineraryStop } from '../types/index';
+import type { APIPlanItem } from '../types/api';
 import { AppLayout } from '../components/layout';
 import { TaskCard } from '../components/features/tasks';
 import { SectionHeader } from '../components/ui';
 import { ProgressBar, EmptySlot } from '../components/common';
 import { usePlans, usePlanDetail } from '../hooks/usePlans';
 
-const categoryToIcon = (category: string): string => {
+const categoryToIcon = (category: APIPlanItem['category']): string => {
   switch (category) {
-    case 'dining': return 'restaurant';
-    case 'transit': return 'directions_car';
-    case 'sightseeing': return 'explore';
-    case 'stay': return 'hotel';
-    default: return 'travel_explore';
+    case 'FOOD':          return 'restaurant';
+    case 'TRANSPORT':     return 'directions_car';
+    case 'ACTIVITY':      return 'explore';
+    case 'ACCOMMODATION': return 'hotel';
+    default:              return 'travel_explore';
   }
 };
 
-const stopToTask = (stop: ItineraryStop): Task => ({
-  id: stop.id,
-  title: stop.title,
-  description: stop.description || stop.subtitle || stop.location || '',
-  status: 'todo',
-  icon: categoryToIcon(stop.category),
-  ctaLabel: '상세 보기',
+const statusToTaskStatus = (status: APIPlanItem['status']): Task['status'] => {
+  if (status === 'CONFIRMED') return 'done';
+  if (status === 'CANCELLED') return 'done';
+  return 'todo';
+};
+
+const itemToTask = (item: APIPlanItem): Task => ({
+  id: item.id,
+  title: item.title,
+  description: item.description || item.subtitle || item.location || '',
+  status: statusToTaskStatus(item.status),
+  icon: categoryToIcon(item.category),
+  ctaLabel: item.external_link ? '예약하기' : '상세 보기',
   assignees: [],
 });
 
 export default function TaskPage() {
+  const navigate = useNavigate();
   const { plans, isLoading: plansLoading } = usePlans();
   const firstPlanId = plans[0]?.id ?? null;
   const { tripDays, isLoading: detailLoading } = usePlanDetail(firstPlanId);
 
   const isLoading = plansLoading || detailLoading;
-  const allStops = tripDays.flatMap((day) => day.stops);
-  const tasks = allStops.map(stopToTask);
+
+  // tripDays에서 직접 task 생성 (각 stop의 원본 데이터가 필요하지만
+  // APIPlan.days를 통해 items를 직접 접근)
+  const latestPlan = plans[0];
+  const allItems: APIPlanItem[] = latestPlan?.days
+    ? [...latestPlan.days]
+        .sort((a, b) => a.day_number - b.day_number)
+        .flatMap(day => [...day.items].sort((a, b) => a.order_index - b.order_index))
+    : [];
+
+  // plans[0].days가 비어 있으면(list API가 days 미포함) tripDays fallback 사용
+  const tasks: Task[] = allItems.length > 0
+    ? allItems.map(itemToTask)
+    : tripDays.flatMap(day => day.stops).map(stop => ({
+        id: stop.id,
+        title: stop.title,
+        description: stop.description || stop.subtitle || stop.location || '',
+        status: stop.status === 'CONFIRMED' ? 'done' : 'todo' as Task['status'],
+        icon: categoryToIcon(
+          stop.category === 'transit' ? 'TRANSPORT'
+          : stop.category === 'stay' ? 'ACCOMMODATION'
+          : stop.category === 'dining' ? 'FOOD'
+          : 'ACTIVITY'
+        ),
+        ctaLabel: stop.externalLink ? '예약하기' : '상세 보기',
+        assignees: [],
+      }));
 
   const doneCount = tasks.filter((t) => t.status === 'done').length;
   const progressPercentage = tasks.length > 0
@@ -77,8 +110,21 @@ export default function TaskPage() {
 
         {/* 빈 상태 */}
         {!isLoading && tasks.length === 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <EmptySlot label="Generate Itinerary로 일정을 만들어보세요" icon="travel_explore" />
+          <div className="flex flex-col items-center justify-center py-32 text-center">
+            <span className="material-symbols-outlined text-5xl text-outline-variant mb-4">
+              checklist
+            </span>
+            <p className="font-headline font-bold text-xl text-on-surface mb-2">할 일이 없어요</p>
+            <p className="text-on-surface-variant text-sm mb-8">
+              일정을 생성하면 예약할 항목들이 여기에 표시돼요.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/plan')}
+              className="bg-primary text-on-primary px-6 py-3 rounded-full font-semibold text-sm hover:scale-[1.02] transition-all"
+            >
+              일정 만들러 가기
+            </button>
           </div>
         )}
 

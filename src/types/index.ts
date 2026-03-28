@@ -25,14 +25,18 @@ export interface Task {
 export interface ItineraryStop {
   id: string;
   time: string;
-  category: 'dining' | 'transit' | 'sightseeing' | 'stay' | string;
+  endTime?: string;
+  category: 'dining' | 'transit' | 'sightseeing' | 'stay' | 'transport';
   title: string;
   subtitle?: string;
-  location?: string;
   description?: string;
+  location?: string;
+  imageUrl?: string;
   badge?: string;
-  imgUrl?: string;
   tags?: string[];
+  amount?: string;
+  externalLink?: string;
+  status?: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 }
 
 export interface DayStats {

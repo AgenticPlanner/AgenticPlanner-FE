@@ -1,25 +1,29 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout';
 import { DaySelector, TimelineThread, StopCard, DaySidebar } from '@/components/features/itinerary';
 import { FABGroup, ResizeDivider } from '@/components/common';
 import { usePanelResize } from '@/hooks/usePanelResize';
-import { usePlans, usePlanDetail } from '@/hooks/usePlans';
+import { usePlanDetail } from '@/hooks/usePlans';
 
 type ItineraryMobileTab = 'timeline' | 'sidebar';
 
 export default function ItineraryPage() {
   const [searchParams] = useSearchParams();
-  const planIdParam = searchParams.get('planId');
+  const navigate = useNavigate();
+  const planIdParam = searchParams.get('planId') ?? undefined;
 
-  const { plans } = usePlans();
-  const activePlanId = planIdParam || plans[0]?.id || null;
-
-  const { plan, tripDays, isLoading, error } = usePlanDetail(activePlanId);
+  const { plan, tripDays, isLoading, error } = usePlanDetail(planIdParam);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
+
+  // tripDays 변경 시 activeDayIndex 리셋
+  useEffect(() => {
+    setActiveDayIndex(0);
+  }, [tripDays]);
+
   const activeDay = tripDays[activeDayIndex] ?? null;
   const currentStops = activeDay?.stops ?? [];
 
@@ -64,7 +68,16 @@ export default function ItineraryPage() {
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <span className="material-symbols-outlined text-5xl text-outline-variant mb-4">map</span>
             <p className="font-headline font-bold text-xl text-on-surface mb-2">아직 일정이 없어요</p>
-            <p className="text-on-surface-variant text-sm">Plan 페이지에서 Generate Itinerary로 일정을 만들어보세요.</p>
+            <p className="text-on-surface-variant text-sm mb-8">
+              Plan 페이지에서 Captain Bean과 대화해 일정을 만들어보세요.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/plan')}
+              className="bg-primary text-on-primary px-6 py-3 rounded-full font-semibold text-sm hover:scale-[1.02] transition-all"
+            >
+              플랜 만들러 가기
+            </button>
           </div>
         )}
 
@@ -73,7 +86,7 @@ export default function ItineraryPage() {
             {/* Hero Section */}
             <div className="mb-10 md:mb-16">
               <span className="block text-primary font-bold tracking-widest text-xs uppercase mb-2">
-                {plan?.description || '여행 일정'}
+                {plan?.plan_type || '여행 일정'}
               </span>
               <h3 className="font-headline font-extrabold text-4xl md:text-5xl text-on-surface mb-8 md:mb-10">
                 {plan?.title || '여행 일정'}

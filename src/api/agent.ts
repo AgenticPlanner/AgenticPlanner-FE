@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { AgentSession, AgentChatRequest } from '../types/api';
+import type { AgentSession, AgentChatRequest, SSEDonePayload } from '../types/api';
 
 export const createSession = (plan_id?: number) =>
   apiClient.post<AgentSession>('/api/v1/agent/session/', { plan_id }).then(r => r.data);
@@ -14,7 +14,7 @@ export const selectConcept = (sessionId: string, concept: unknown) =>
 export const streamChat = async (
   body: AgentChatRequest,
   onChunk: (text: string) => void,
-  onDone: () => void,
+  onDone: (planId?: string) => void,
   signal?: AbortSignal
 ) => {
   const token = localStorage.getItem('accessToken');
@@ -38,7 +38,7 @@ export const streamChat = async (
 
   while (true) {
     const { done, value } = await reader.read();
-    if (done) { onDone(); break; }
+    if (done) { onDone(undefined); break; }
 
     const lines = decoder.decode(value).split('\n');
     for (const line of lines) {
@@ -53,7 +53,9 @@ export const streamChat = async (
           onChunk(parsed.delta as string);
         }
         if (parsed.type === 'done') {
-          onDone();
+          const donePayload = parsed as unknown as SSEDonePayload;
+          const planId = donePayload.plan_id ?? donePayload.session?.plan?.id ?? undefined;
+          onDone(planId ?? undefined);
           return;
         }
         if (parsed.type === 'error') {
