@@ -75,3 +75,32 @@ export interface ChatMessage {
   content: string;
   timestamp: string;
 }
+
+// 챗봇 메시지 파싱 결과 타입
+export type ParsedMessageType =
+  | 'text'            // 일반 텍스트
+  | 'concepts'        // 컨셉 선택 카드
+  | 'concept_confirm' // 선택한 컨셉 확인
+  | 'plan_confirm'    // 세부 플랜 확정 확인
+  | 'collection'      // 수집 중인 정보 요약 (phase: initial)
+  | 'unknown';        // 파싱 불가 → raw 텍스트로 폴백
+
+export interface ConceptOption {
+  id: string;
+  emoji: string;
+  title: string;
+  tagline: string;
+  description: string;
+  highlights: string[];
+  budget_range: string;
+  is_discovery?: boolean;
+}
+
+export interface ParsedMessage {
+  type: ParsedMessageType;
+  text: string;                         // JSON 제거된 순수 텍스트 (앞에 붙은 설명글)
+  concepts?: ConceptOption[];           // type === 'concepts'
+  selectedConcept?: ConceptOption;      // type === 'concept_confirm'
+  confirmation?: string;                // type === 'plan_confirm'
+  collected?: Record<string, unknown>;  // type === 'collection'
+}

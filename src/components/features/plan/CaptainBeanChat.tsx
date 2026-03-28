@@ -10,21 +10,6 @@ interface CaptainBeanChatProps {
   onUnmount?: () => void;
 }
 
-// 스트리밍 중 표시되는 점 애니메이션
-function StreamingDots() {
-  return (
-    <div className="flex items-center gap-1 px-4 py-3">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="w-2 h-2 rounded-full bg-primary animate-pulse"
-          style={{ animationDelay: `${i * 150}ms` }}
-        />
-      ))}
-    </div>
-  );
-}
-
 export default function CaptainBeanChat({
   messages,
   onSendMessage,
@@ -54,17 +39,17 @@ export default function CaptainBeanChat({
     setInputValue('');
   };
 
-  // 스트리밍 중인 마지막 AI 메시지가 비어 있으면 dots 표시
-  const lastMsg = messages[messages.length - 1];
-  const showDots = isStreaming && lastMsg?.role === 'ai' && lastMsg.content === '';
-
   return (
     <div className="flex-1 flex flex-col bg-surface-container-lowest relative min-h-0">
       {/* Chat history */}
       <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 no-scrollbar">
         {messages.map((msg, idx) => (
           <div key={msg.id}>
-            <ChatBubble message={msg} />
+            <ChatBubble
+              message={msg}
+              isStreaming={isStreaming && idx === messages.length - 1}
+              onAction={isStreaming ? undefined : (text) => onSendMessage(text)}
+            />
             {/* Suggestion chips after first AI message when no other messages exist */}
             {idx === 0 && messages.length === 1 && (
               <div className="ml-14 mt-4 flex flex-wrap gap-3">
@@ -83,9 +68,6 @@ export default function CaptainBeanChat({
             )}
           </div>
         ))}
-
-        {/* 스트리밍 점 애니메이션 (빈 AI 메시지 대기 중) */}
-        {showDots && <StreamingDots />}
 
         {/* 자동 스크롤 앵커 */}
         <div ref={bottomRef} />
