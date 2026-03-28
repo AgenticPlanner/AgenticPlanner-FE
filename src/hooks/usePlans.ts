@@ -29,8 +29,8 @@ export const usePlans = () => {
   };
 
   const handleInvitePlan = async (id: string) => {
-    const { invite_code } = await invitePlan(id);
-    return invite_code;
+    const { code } = await invitePlan(id);
+    return code;
   };
 
   return {

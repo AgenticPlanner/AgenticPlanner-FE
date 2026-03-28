@@ -11,16 +11,23 @@ export interface UserMe {
 }
 
 // Plans
+export interface APIPlanMember {
+  id: string;
+  user: UserMe & { id: number | string };
+  role: 'OWNER' | 'EDITOR' | 'VIEWER';
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface APIPlanItem {
   id: string;
-  day: string;
   order_index: number;
   title: string;
   subtitle?: string;
   description?: string;
-  category: 'TRANSPORT' | 'ACCOMMODATION' | 'ACTIVITY' | 'FOOD' | 'ETC';
+  category: 'TRANSPORT' | 'ACCOMMODATION' | 'ACTIVITY' | 'RESTAURANT' | 'OTHER';
   amount?: string;           // "320000.00"
-  badge?: string;            // "₩320,000"
+  badge?: string;
   tags?: string[];
   external_link?: string;
   img_url?: string;
@@ -28,14 +35,16 @@ export interface APIPlanItem {
   end_time?: string;
   location?: string;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+  paid_at?: string;
+  is_active?: boolean;
 }
 
 export interface APIPlanDay {
   id: string;
-  plan: string;
   day_number: number;
   date: string;              // "YYYY-MM-DD"
   day_budget?: number;
+  is_active?: boolean;
   items: APIPlanItem[];
 }
 
@@ -45,10 +54,12 @@ export interface APIPlan {
   plan_type?: string;
   start_date?: string;
   end_date?: string;
+  status?: string;
   total_budget?: string;
   days: APIPlanDay[];
+  members?: APIPlanMember[];
   created_at: string;
-  updated_at: string;
+  is_active?: boolean;
 }
 
 // Agent
