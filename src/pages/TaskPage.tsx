@@ -1,15 +1,16 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Task } from '../types/index';
 import type { APIPlanItem } from '../types/api';
 import { AppLayout } from '../components/layout';
-import { TaskCard } from '../components/features/tasks';
+import { TaskCard, TaskSkeleton } from '../components/features/tasks';
 import { SectionHeader } from '../components/ui';
-import { ProgressBar, EmptySlot } from '../components/common';
-import { usePlans, usePlanDetail } from '../hooks/usePlans';
+import { ProgressBar, EmptySlot, EmptyState } from '../components/common';
+import { usePlanContext } from '../contexts/PlanContext';
 
 const categoryToIcon = (category: APIPlanItem['category']): string => {
   switch (category) {
-    case 'FOOD':          return 'restaurant';
+    case 'RESTAURANT':    return 'restaurant';
     case 'TRANSPORT':     return 'directions_car';
     case 'ACTIVITY':      return 'explore';
     case 'ACCOMMODATION': return 'hotel';
@@ -35,38 +36,18 @@ const itemToTask = (item: APIPlanItem): Task => ({
 
 export default function TaskPage() {
   const navigate = useNavigate();
-  const { plans, isLoading: plansLoading } = usePlans();
-  const firstPlanId = plans[0]?.id ?? null;
-  const { tripDays, isLoading: detailLoading } = usePlanDetail(firstPlanId);
+  const { activePlan, loading, error, refetch } = usePlanContext();
 
-  const isLoading = plansLoading || detailLoading;
+  const allItems = useMemo(() => {
+    if (!activePlan?.days) return [];
+    return [...activePlan.days]
+      .sort((a, b) => a.day_number - b.day_number)
+      .flatMap(day =>
+        [...(day.items ?? [])].sort((a, b) => a.order_index - b.order_index)
+      );
+  }, [activePlan]);
 
-  // tripDays에서 직접 task 생성 (각 stop의 원본 데이터가 필요하지만
-  // APIPlan.days를 통해 items를 직접 접근)
-  const latestPlan = plans[0];
-  const allItems: APIPlanItem[] = latestPlan?.days
-    ? [...latestPlan.days]
-        .sort((a, b) => a.day_number - b.day_number)
-        .flatMap(day => [...day.items].sort((a, b) => a.order_index - b.order_index))
-    : [];
-
-  // plans[0].days가 비어 있으면(list API가 days 미포함) tripDays fallback 사용
-  const tasks: Task[] = allItems.length > 0
-    ? allItems.map(itemToTask)
-    : tripDays.flatMap(day => day.stops).map(stop => ({
-        id: stop.id,
-        title: stop.title,
-        description: stop.description || stop.subtitle || stop.location || '',
-        status: stop.status === 'CONFIRMED' ? 'done' : 'todo' as Task['status'],
-        icon: categoryToIcon(
-          stop.category === 'transit' ? 'TRANSPORT'
-          : stop.category === 'stay' ? 'ACCOMMODATION'
-          : stop.category === 'dining' ? 'FOOD'
-          : 'ACTIVITY'
-        ),
-        ctaLabel: stop.externalLink ? '예약하기' : '상세 보기',
-        assignees: [],
-      }));
+  const tasks: Task[] = useMemo(() => allItems.map(itemToTask), [allItems]);
 
   const doneCount = tasks.filter((t) => t.status === 'done').length;
   const progressPercentage = tasks.length > 0
@@ -101,35 +82,47 @@ export default function TaskPage() {
           )}
         </div>
 
-        {/* 로딩 상태 */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary" />
-          </div>
-        )}
+        {/* 로딩 */}
+        {loading && <TaskSkeleton />}
 
-        {/* 빈 상태 */}
-        {!isLoading && tasks.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <span className="material-symbols-outlined text-5xl text-outline-variant mb-4">
-              checklist
-            </span>
-            <p className="font-headline font-bold text-xl text-on-surface mb-2">할 일이 없어요</p>
-            <p className="text-on-surface-variant text-sm mb-8">
-              일정을 생성하면 예약할 항목들이 여기에 표시돼요.
-            </p>
+        {/* 에러 */}
+        {error && !loading && (
+          <div className="flex flex-col items-center gap-4 py-20">
+            <div className="bg-red-50 text-red-600 text-sm font-medium rounded-xl px-5 py-4">
+              {error}
+            </div>
             <button
               type="button"
-              onClick={() => navigate('/plan')}
-              className="bg-primary text-on-primary px-6 py-3 rounded-full font-semibold text-sm hover:scale-[1.02] transition-all"
+              onClick={refetch}
+              className="bg-primary text-on-primary px-6 py-3 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity"
             >
-              일정 만들러 가기
+              다시 시도
             </button>
           </div>
         )}
 
+        {/* 플랜 없음 */}
+        {!loading && !error && !activePlan && (
+          <EmptyState
+            icon="assignment"
+            title="아직 플랜이 없어요"
+            description="일정을 생성하면 예약할 항목들이 여기에 표시돼요."
+            ctaLabel="플랜 만들러 가기"
+            onCta={() => navigate('/plan')}
+          />
+        )}
+
+        {/* 플랜 있지만 items 없음 */}
+        {!loading && !error && activePlan && tasks.length === 0 && (
+          <EmptyState
+            icon="checklist"
+            title="할 일이 없어요"
+            description="일정을 생성하면 예약할 항목들이 여기에 표시돼요."
+          />
+        )}
+
         {/* Bento Grid */}
-        {!isLoading && tasks.length > 0 && (
+        {!loading && !error && tasks.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {tasks.map((task, idx) => (
               <TaskCard key={task.id} task={task} featured={idx === 0} />
