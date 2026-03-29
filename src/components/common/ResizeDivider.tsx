@@ -18,7 +18,7 @@ export default function ResizeDivider({
   const isHorizontal = direction === 'horizontal';
 
   const sizeClasses = isHorizontal
-    ? 'w-1.5 h-full cursor-col-resize flex-shrink-0 flex-col'
+    ? 'w-1.5 h-fit cursor-col-resize flex-shrink-0 flex-col'
     : 'h-1.5 w-full cursor-row-resize flex-shrink-0 flex-row';
 
   const bgClass = isDragging

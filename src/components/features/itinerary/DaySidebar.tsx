@@ -1,6 +1,7 @@
 import type { TripDay } from '@/types/index';
 import { StatRow } from '@/components/ui';
 import { GlassPanel } from '@/components/common';
+import { MapPin } from 'lucide-react';
 
 interface DaySidebarProps {
   day: TripDay;
@@ -9,27 +10,29 @@ interface DaySidebarProps {
 
 export default function DaySidebar({ day, dayIndex }: DaySidebarProps) {
   return (
-    <div className="space-y-8">
-      {/* Map Panel */}
-      <GlassPanel>
-        {/* Map placeholder */}
-        <div className="h-64 relative bg-gradient-to-br from-primary-container to-tertiary-container">
-          <div className="absolute inset-0 bg-primary/10 mix-blend-multiply" />
+    <div className="space-y-8 font-body">
 
-          {/* Travel time card */}
-          <div className="absolute bottom-4 left-4 right-4 bg-white/80 backdrop-blur-md p-4 rounded-lg flex justify-between items-center">
+      {/* Map Panel */}
+      <div className="bg-white rounded-[20px] shadow-header overflow-hidden border border-slate-100">
+
+        {/* 지도 이미지 배경 임시배치 */}
+        <div className="h-64 relative overflow-hidden">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=800&auto=format&fit=crop')" }}
+          />
+
+          <GlassPanel className="absolute bottom-5 left-5 right-5 p-5 flex justify-between items-center">
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <p className="text-[10px] font-bold text-slate-700 tracking-widest uppercase drop-shadow-sm">
                 예상 이동 시간
               </p>
-              <p className="font-headline font-bold text-on-surface mt-1">
-                {day.travelTime}
+              <p className="font-bold text-base text-slate-900 mt-1 drop-shadow-sm">
+                {day.travelTime || '42 mins today'}
               </p>
             </div>
-            <span className="material-symbols-outlined text-primary text-2xl">
-              near_me
-            </span>
-          </div>
+            <MapPin className="text-primary-dark drop-shadow-sm text-2xl" />
+          </GlassPanel>
         </div>
 
         {/* Stats section */}
@@ -48,7 +51,7 @@ export default function DaySidebar({ day, dayIndex }: DaySidebarProps) {
             />
           </div>
         </div>
-      </GlassPanel>
+      </div>
 
       {/* Tip Panel */}
       {day.tip && (
