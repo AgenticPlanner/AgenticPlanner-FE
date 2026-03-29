@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ChatMessage } from '@/types';
 import { createSession, getSession, streamChat } from '@/api/agent';
 import { initialChatMessages } from '@/data/tripData';
@@ -34,6 +35,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const [isStreaming, setIsStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const navigate = useNavigate();
 
   // 앱 시작 시 sessionStorage의 sessionId 유효성 확인
   useEffect(() => {
@@ -122,8 +124,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             )
           );
         },
-        () => {
+        (createdPlanId) => {
           setIsStreaming(false);
+          if (createdPlanId) {
+            navigate(`/itinerary?planId=${createdPlanId}`);
+          }
         },
         abortRef.current.signal
       );

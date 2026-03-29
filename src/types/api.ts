@@ -11,41 +11,55 @@ export interface UserMe {
 }
 
 // Plans
-export interface APIPlan {
+export interface APIPlanMember {
   id: string;
-  title: string;
-  description?: string;
-  invite_code?: string;
+  user: UserMe & { id: number | string };
+  role: 'OWNER' | 'EDITOR' | 'VIEWER';
+  is_active: boolean;
   created_at: string;
-  updated_at: string;
-}
-
-export interface APIPlanDay {
-  id: string;
-  plan: string;
-  date: string;         // "YYYY-MM-DD"
-  day_number: number;
-  title?: string;
 }
 
 export interface APIPlanItem {
   id: string;
-  day: string;
+  order_index: number;
   title: string;
   subtitle?: string;
   description?: string;
-  start_time?: string;
-  end_time?: string;
-  order_index: number;
-  location?: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | string;
-  category: 'dining' | 'transit' | 'sightseeing' | 'stay' | string;
-  external_link?: string;
+  category: 'TRANSPORT' | 'ACCOMMODATION' | 'ACTIVITY' | 'RESTAURANT' | 'OTHER';
+  amount?: string;           // "320000.00"
   badge?: string;
   tags?: string[];
-  amount?: number;
-  paid_at?: string;
+  external_link?: string;
   img_url?: string;
+  start_time?: string;       // "HH:MM"
+  end_time?: string;
+  location?: string;
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+  paid_at?: string;
+  is_active?: boolean;
+}
+
+export interface APIPlanDay {
+  id: string;
+  day_number: number;
+  date: string;              // "YYYY-MM-DD"
+  day_budget?: number;
+  is_active?: boolean;
+  items: APIPlanItem[];
+}
+
+export interface APIPlan {
+  id: string;
+  title: string;
+  plan_type?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  total_budget?: string;
+  days: APIPlanDay[];
+  members?: APIPlanMember[];
+  created_at: string;
+  is_active?: boolean;
 }
 
 // Agent
@@ -59,6 +73,18 @@ export interface AgentChatRequest {
   session_id: string;
   message: string;
   plan_id?: number;
+}
+
+// done 이벤트 페이로드
+export interface SSEDonePayload {
+  type: 'done';
+  session: {
+    id: string;
+    phase: string;
+    plan: APIPlan | null;
+    messages: unknown[];
+  };
+  plan_id: string | null;
 }
 
 // API 공통 에러 형태

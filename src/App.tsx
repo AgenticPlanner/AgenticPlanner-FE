@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
+import { PlanProvider } from './contexts/PlanContext';
 import { ProtectedRoute } from './components/common';
 
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -20,6 +21,7 @@ export default function App() {
   return (
     <AuthProvider>
       <ChatProvider>
+        <PlanProvider>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route
@@ -61,6 +63,7 @@ export default function App() {
           }
         />
       </Routes>
+        </PlanProvider>
       </ChatProvider>
     </AuthProvider>
   );

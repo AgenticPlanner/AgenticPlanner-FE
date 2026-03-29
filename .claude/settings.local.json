@@ -4,7 +4,8 @@
       "Bash(npx tsc:*)",
       "Bash(grep -v \"//.*any\")",
       "Bash(npx vite:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(.venv/Scripts/python.exe -c \":*)"
     ]
   }
 }
