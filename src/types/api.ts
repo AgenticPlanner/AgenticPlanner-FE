@@ -63,28 +63,49 @@ export interface APIPlan {
 }
 
 // Agent
+export interface TravelInfo {
+  destination: string;
+  start_date: string;        // YYYY-MM-DD
+  end_date: string;          // YYYY-MM-DD
+  group_size: number;
+  budget: number;
+  travel_style: string;      // 쉼표 구분 문자열
+  special_requests?: string;
+}
+
+export interface Concept {
+  id?: string;
+  title: string;
+  description: string;
+  tags: string[];
+  image_url?: string;
+}
+
 export interface AgentSession {
   id: string;
-  plan_id?: number;
+  phase: string;
+  travel_info: TravelInfo;
+  concepts: Concept[] | null;
+  plan: APIPlan | null;
   created_at: string;
 }
 
-export interface AgentChatRequest {
-  session_id: string;
-  message: string;
-  plan_id?: number;
-}
-
-// done 이벤트 페이로드
-export interface SSEDonePayload {
-  type: 'done';
-  session: {
-    id: string;
-    phase: string;
-    plan: APIPlan | null;
-    messages: unknown[];
+export interface SSEEvent {
+  type: 'delta' | 'thinking_step' | 'tool_result' | 'phase_change' | 'done' | 'error';
+  delta?: string;
+  step?: string;
+  tool?: string;
+  result?: {
+    accommodation_count: number;
+    activity_count: number;
+    flight_count: number;
+    has_exchange_rate: boolean;
   };
-  plan_id: string | null;
+  phase?: string;
+  concepts?: Concept[];        // phase_change 이벤트에서 직접 전달될 수 있음
+  session?: AgentSession;
+  plan_id?: string;
+  error?: string;
 }
 
 // API 공통 에러 형태

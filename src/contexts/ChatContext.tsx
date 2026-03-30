@@ -1,11 +1,21 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ChatMessage } from '@/types';
-import { createSession, getSession, streamChat } from '@/api/agent';
+import type { TravelInfo } from '@/types/api';
+import { createAgentSession, getAgentSession, streamChat } from '@/api/agent';
 import { initialChatMessages } from '@/data/tripData';
 
 const SESSION_KEY = 'agentSessionId';
 const MESSAGES_KEY = 'agentMessages';
+
+const EMPTY_TRAVEL_INFO: TravelInfo = {
+  destination: '',
+  start_date: '',
+  end_date: '',
+  group_size: 2,
+  budget: 0,
+  travel_style: '',
+};
 
 interface ChatContextValue {
   sessionId: string | null;
@@ -13,7 +23,8 @@ interface ChatContextValue {
   isStreaming: boolean;
   sendMessage: (content: string) => Promise<void>;
   stopStreaming: () => void;
-  initSession: (planId?: number) => Promise<void>;
+  initSession: (travelInfo?: TravelInfo) => Promise<void>;
+  startSession: (travelInfo: TravelInfo) => Promise<void>;
   clearSession: () => void;
 }
 
@@ -41,7 +52,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const storedId = sessionStorage.getItem(SESSION_KEY);
     if (!storedId) return;
-    getSession(storedId).catch(() => {
+    getAgentSession(storedId).catch(() => {
       sessionStorage.removeItem(SESSION_KEY);
       setSessionId(null);
     });
@@ -52,16 +63,31 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.setItem(MESSAGES_KEY, JSON.stringify(messages));
   }, [messages]);
 
-  const initSession = useCallback(async (planId?: number) => {
+  const initSession = useCallback(async (travelInfo?: TravelInfo) => {
     if (sessionId) return; // 중복 생성 방지
     try {
-      const session = await createSession(planId);
+      const session = await createAgentSession(travelInfo ?? EMPTY_TRAVEL_INFO);
       sessionStorage.setItem(SESSION_KEY, session.id);
       setSessionId(session.id);
     } catch {
       // silent
     }
   }, [sessionId]);
+
+  // 기존 세션을 버리고 travel_info를 포함한 새 세션으로 교체
+  const startSession = useCallback(async (travelInfo: TravelInfo) => {
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(MESSAGES_KEY);
+    setSessionId(null);
+    setMessages(initialChatMessages);
+    try {
+      const session = await createAgentSession(travelInfo);
+      sessionStorage.setItem(SESSION_KEY, session.id);
+      setSessionId(session.id);
+    } catch {
+      // silent — sendMessage가 재시도할 때 fallback 처리
+    }
+  }, []);
 
   const clearSession = useCallback(() => {
     sessionStorage.removeItem(SESSION_KEY);
@@ -95,7 +121,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     let sid = sessionId;
     if (!sid) {
       try {
-        const session = await createSession();
+        const session = await createAgentSession(EMPTY_TRAVEL_INFO);
         sid = session.id;
         sessionStorage.setItem(SESSION_KEY, sid);
         setSessionId(sid);
@@ -116,22 +142,28 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await streamChat(
-        { session_id: sid, message: content },
-        (chunk) => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === aiMsgId ? { ...m, content: m.content + chunk } : m
-            )
-          );
-        },
-        (createdPlanId) => {
-          setIsStreaming(false);
-          if (createdPlanId) {
-            navigate(`/itinerary?planId=${createdPlanId}`);
+        sid,
+        content,
+        (event) => {
+          if (event.type === 'delta' && event.delta) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiMsgId ? { ...m, content: m.content + event.delta } : m
+              )
+            );
+          }
+          if (event.type === 'done') {
+            setIsStreaming(false);
+            const planId = event.plan_id ?? event.session?.plan?.id ?? undefined;
+            if (planId) navigate(`/itinerary?planId=${planId}`);
+          }
+          if (event.type === 'error') {
+            throw new Error(event.error ?? 'SSE 에러');
           }
         },
         abortRef.current.signal
       );
+      setIsStreaming(false);
     } catch (err) {
       if ((err as { name?: string }).name === 'AbortError') return;
       setIsStreaming(false);
@@ -143,7 +175,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         )
       );
     }
-  }, [sessionId, isStreaming]);
+  }, [sessionId, isStreaming, navigate]);
 
   const stopStreaming = useCallback(() => {
     abortRef.current?.abort();
@@ -151,7 +183,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <ChatContext.Provider value={{ sessionId, messages, isStreaming, sendMessage, stopStreaming, initSession, clearSession }}>
+    <ChatContext.Provider value={{ sessionId, messages, isStreaming, sendMessage, stopStreaming, initSession, startSession, clearSession }}>
       {children}
     </ChatContext.Provider>
   );

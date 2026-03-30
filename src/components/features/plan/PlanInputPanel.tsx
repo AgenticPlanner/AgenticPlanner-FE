@@ -1,27 +1,75 @@
+import { useState, useRef } from 'react';
 import type { PlanFormData } from '@/types';
 import { FormField, RangeSlider, TagChip } from '@/components/ui';
-import { BUDGET_STEP } from '@/data/tripData';
+import { BUDGET_STEP, BUDGET_MIN, BUDGET_MAX } from '@/data/tripData';
 
 interface PlanInputPanelProps {
   formData: PlanFormData;
   onChange: (updated: Partial<PlanFormData>) => void;
   onSubmit: () => void;
+  isLoading?: boolean;
 }
 
 const inputBase =
   'w-full bg-surface-container-low rounded-xl p-4 font-body text-sm text-on-surface placeholder:text-outline-variant outline-none focus:ring-1 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all';
 
+/** ₩500,000 → "50만원", ₩1,000,000 → "100만원" */
 function formatBudget(v: number) {
-  return v >= 1000 ? `$${v / 1000}k` : `$${v}`;
+  const man = Math.round(v / 10000);
+  return `${man.toLocaleString()}만원`;
 }
 
-export default function PlanInputPanel({ formData, onChange, onSubmit }: PlanInputPanelProps) {
+export default function PlanInputPanel({ formData, onChange, onSubmit, isLoading = false }: PlanInputPanelProps) {
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [newTagInput, setNewTagInput] = useState('');
+  const addInputRef = useRef<HTMLInputElement>(null);
+
   const toggleInterest = (id: string) => {
     onChange({
       interests: formData.interests.map((tag) =>
         tag.id === id ? { ...tag, selected: !tag.selected } : tag
       ),
     });
+  };
+
+  const openAddTag = () => {
+    setIsAddingTag(true);
+    setTimeout(() => addInputRef.current?.focus(), 0);
+  };
+
+  const commitAddTag = () => {
+    const label = newTagInput.trim();
+    if (label) {
+      onChange({
+        interests: [
+          ...formData.interests,
+          { id: `custom-${Date.now()}`, label, selected: true },
+        ],
+      });
+    }
+    setNewTagInput('');
+    setIsAddingTag(false);
+  };
+
+  const cancelAddTag = () => {
+    setNewTagInput('');
+    setIsAddingTag(false);
+  };
+
+  const handleBudgetMinInput = (raw: string) => {
+    const man = Number(raw);
+    if (isNaN(man) || man < 0) return;
+    const won = man * 10000;
+    const clamped = Math.max(BUDGET_MIN, Math.min(formData.budgetMax - BUDGET_STEP, won));
+    onChange({ budgetMin: clamped });
+  };
+
+  const handleBudgetMaxInput = (raw: string) => {
+    const man = Number(raw);
+    if (isNaN(man) || man < 0) return;
+    const won = man * 10000;
+    const clamped = Math.min(BUDGET_MAX, Math.max(formData.budgetMin + BUDGET_STEP, won));
+    onChange({ budgetMax: clamped });
   };
 
   return (
@@ -70,15 +118,46 @@ export default function PlanInputPanel({ formData, onChange, onSubmit }: PlanInp
       </FormField>
 
       {/* Budget Range */}
-      <FormField label="예산 범위" icon="payments">
+      <FormField label="예산 범위 (1인당)" icon="payments">
         <RangeSlider
-          min={1000}
-          max={20000}
+          min={BUDGET_MIN}
+          max={BUDGET_MAX}
           step={BUDGET_STEP}
           value={[formData.budgetMin, formData.budgetMax]}
           onChange={([min, max]) => onChange({ budgetMin: min, budgetMax: max })}
           formatLabel={formatBudget}
         />
+        {/* 직접 입력 */}
+        <div className="flex gap-3 mt-3">
+          <div className="flex-1 space-y-1">
+            <p className="text-[10px] text-outline-variant uppercase tracking-widest">최소</p>
+            <div className="flex items-center gap-1 bg-surface-container-low rounded-xl px-3 py-2.5">
+              <input
+                type="number"
+                value={Math.round(formData.budgetMin / 10000)}
+                onChange={(e) => handleBudgetMinInput(e.target.value)}
+                min={BUDGET_MIN / 10000}
+                max={(formData.budgetMax - BUDGET_STEP) / 10000}
+                className="flex-1 bg-transparent outline-none text-sm font-body text-on-surface w-0 min-w-0"
+              />
+              <span className="text-xs text-outline-variant shrink-0 font-body">만원</span>
+            </div>
+          </div>
+          <div className="flex-1 space-y-1">
+            <p className="text-[10px] text-outline-variant uppercase tracking-widest">최대</p>
+            <div className="flex items-center gap-1 bg-surface-container-low rounded-xl px-3 py-2.5">
+              <input
+                type="number"
+                value={Math.round(formData.budgetMax / 10000)}
+                onChange={(e) => handleBudgetMaxInput(e.target.value)}
+                min={(formData.budgetMin + BUDGET_STEP) / 10000}
+                max={BUDGET_MAX / 10000}
+                className="flex-1 bg-transparent outline-none text-sm font-body text-on-surface w-0 min-w-0"
+              />
+              <span className="text-xs text-outline-variant shrink-0 font-body">만원</span>
+            </div>
+          </div>
+        </div>
       </FormField>
 
       {/* Travel Style & Interests */}
@@ -92,12 +171,48 @@ export default function PlanInputPanel({ formData, onChange, onSubmit }: PlanInp
               onClick={() => toggleInterest(tag.id)}
             />
           ))}
-          <button
-            type="button"
-            className="px-4 py-1.5 rounded-full text-xs font-semibold border border-dashed border-outline-variant text-outline-variant hover:border-primary hover:text-primary transition-colors cursor-pointer"
-          >
-            + 더보기
-          </button>
+
+          {/* 커스텀 태그 입력 */}
+          {isAddingTag ? (
+            <div className="flex items-center gap-1 bg-surface-container-low rounded-full pl-3 pr-1.5 py-1">
+              <input
+                ref={addInputRef}
+                value={newTagInput}
+                onChange={(e) => setNewTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); commitAddTag(); }
+                  if (e.key === 'Escape') cancelAddTag();
+                }}
+                placeholder="관심사 입력"
+                maxLength={20}
+                className="bg-transparent outline-none text-xs font-body text-on-surface w-24 placeholder:text-outline-variant"
+              />
+              <button
+                type="button"
+                onClick={commitAddTag}
+                className="text-primary hover:opacity-70 transition-opacity"
+                aria-label="추가"
+              >
+                <span className="material-symbols-outlined text-base leading-none">check</span>
+              </button>
+              <button
+                type="button"
+                onClick={cancelAddTag}
+                className="text-outline-variant hover:opacity-70 transition-opacity"
+                aria-label="취소"
+              >
+                <span className="material-symbols-outlined text-base leading-none">close</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={openAddTag}
+              className="px-4 py-1.5 rounded-full text-xs font-semibold border border-dashed border-outline-variant text-outline-variant hover:border-primary hover:text-primary transition-colors cursor-pointer"
+            >
+              + 추가
+            </button>
+          )}
         </div>
       </FormField>
 
@@ -116,9 +231,10 @@ export default function PlanInputPanel({ formData, onChange, onSubmit }: PlanInp
       <button
         type="button"
         onClick={onSubmit}
-        className="w-full bg-primary text-on-primary py-4 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all font-body"
+        disabled={isLoading}
+        className="w-full bg-primary text-on-primary py-4 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all font-body disabled:opacity-60 disabled:scale-100 disabled:cursor-not-allowed"
       >
-        일정 생성하기
+        {isLoading ? '세션 생성 중...' : '일정 생성하기'}
       </button>
     </div>
   );

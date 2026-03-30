@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PlanFormData } from '@/types';
+import type { TravelInfo } from '@/types/api';
 import { AppLayout } from '@/components/layout';
-import { PlanInputPanel, CaptainBeanChat } from '@/components/features/plan';
+import { PlanInputPanel, SessionList } from '@/components/features/plan';
 import { ResizeDivider } from '@/components/common';
 import { usePanelResize } from '@/hooks/usePanelResize';
-import { useAgentChat } from '@/hooks/useAgentChat';
-import { usePlans } from '@/hooks/usePlans';
+import { createAgentSession } from '@/api/agent';
 import { defaultInterestTags, BUDGET_MIN, BUDGET_MAX } from '@/data/tripData';
 
 export default function PlanPage() {
@@ -22,9 +22,9 @@ export default function PlanPage() {
 
   const { size: leftPanelPercent, isDragging, handleMouseDown, handleTouchStart } = usePanelResize({
     direction: 'horizontal',
-    initialSize: 45,
-    minSize: 30,
-    maxSize: 65,
+    initialSize: 55,
+    minSize: 35,
+    maxSize: 70,
     unit: 'percent',
     storageKey: 'plan-left-panel',
     containerRef,
@@ -40,8 +40,7 @@ export default function PlanPage() {
     additionalContext: '',
   });
 
-  const { messages, isStreaming, sendMessage, stopStreaming } = useAgentChat();
-  const { createPlan } = usePlans();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleFormChange = (updated: Partial<PlanFormData>) => {
     setFormData((prev) => ({ ...prev, ...updated }));
@@ -49,10 +48,25 @@ export default function PlanPage() {
 
   const handleGenerateItinerary = async () => {
     try {
-      const plan = await createPlan({ title: formData.destination || '새 여행 플랜' });
-      navigate(`/itinerary?planId=${plan.id}`);
-    } catch {
-      // 에러는 usePlans 내부에서 관리
+      setIsLoading(true);
+      const travelInfo: TravelInfo = {
+        destination: formData.destination,
+        start_date: formData.departureDate,
+        end_date: formData.returnDate,
+        group_size: 2,
+        budget: formData.budgetMax,
+        travel_style: formData.interests
+          .filter((t) => t.selected)
+          .map((t) => t.label)
+          .join(', '),
+        special_requests: formData.additionalContext || undefined,
+      };
+      const session = await createAgentSession(travelInfo);
+      navigate(`/chat?sessionId=${session.id}&autoStart=true`);
+    } catch (error) {
+      console.error('세션 생성 실패:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -64,7 +78,7 @@ export default function PlanPage() {
           isDragging ? 'pointer-events-none select-none' : ''
         }`}
       >
-        {/* Input panel — full width on mobile, resizable on desktop */}
+        {/* 폼 패널 — 모바일 전체, 데스크톱 리사이즈 가능 */}
         <div
           className="h-full flex flex-col"
           style={isMobile ? { width: '100%' } : { width: `${leftPanelPercent}%` }}
@@ -73,10 +87,11 @@ export default function PlanPage() {
             formData={formData}
             onChange={handleFormChange}
             onSubmit={handleGenerateItinerary}
+            isLoading={isLoading}
           />
         </div>
 
-        {/* Resize divider + Chat panel — desktop only */}
+        {/* 구분선 + 세션 목록 패널 — 데스크톱 전용 */}
         <ResizeDivider
           direction="horizontal"
           onMouseDown={handleMouseDown}
@@ -85,12 +100,7 @@ export default function PlanPage() {
           className="hidden md:flex h-full"
         />
         <div className="hidden md:flex flex-col flex-1 min-w-0 h-full">
-          <CaptainBeanChat
-            messages={messages}
-            onSendMessage={sendMessage}
-            isStreaming={isStreaming}
-            onUnmount={stopStreaming}
-          />
+          <SessionList />
         </div>
       </div>
     </AppLayout>
