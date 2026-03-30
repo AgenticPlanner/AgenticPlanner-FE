@@ -13,10 +13,11 @@ export default function DaySelector({ days, activeDayIndex, onSelect }: DaySelec
         <button
           key={day.label}
           onClick={() => onSelect(index)}
-          className={`flex-shrink-0 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-200 ${activeDayIndex === index
-            ? 'bg-primary text-on-primary font-bold shadow-lg shadow-primary/20'
-            : 'bg-surface-container-high text-on-secondary-container font-medium hover:bg-surface-container-highest'
-            }`}
+          className={`flex-shrink-0 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-200 ${
+            activeDayIndex === index
+              ? 'bg-primary text-on-primary font-bold shadow-lg shadow-primary/20'
+              : 'bg-surface-container-high text-on-secondary-container font-medium hover:bg-surface-container-highest'
+          }`}
         >
           Day {index + 1}
         </button>
