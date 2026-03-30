@@ -40,6 +40,7 @@ export default function ItineraryPage() {
   const [mobileTab, setMobileTab] = useState<ItineraryMobileTab>('timeline');
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handler);
@@ -58,150 +59,150 @@ export default function ItineraryPage() {
 
   return (
     <AppLayout topBarTitle={activePlan?.title || '일정'}>
-      <div className="pt-8 px-4 md:px-12 pb-20 max-w-6xl w-full mx-auto">
-        {/* 로딩 */}
-        {loading && (
-          <div className="mt-8">
-            <ItinerarySkeleton />
-          </div>
-        )}
-
-        {/* 에러 */}
-        {error && !loading && (
-          <div className="flex flex-col items-center gap-4 py-20">
-            <div className="bg-red-50 text-red-600 text-sm font-medium rounded-xl px-5 py-4">
-              {error}
+      {/* 그라데이션 추가 */}
+      <div className="bg-itinerary-gradient min-h-full">
+        <div className="pt-12 px-6 md:px-12 pb-20 max-w-6xl w-full mx-auto font-body">
+          {/* 로딩 */}
+          {loading && (
+            <div className="mt-8">
+              <ItinerarySkeleton />
             </div>
-            <button
-              type="button"
-              onClick={refetch}
-              className="bg-primary text-on-primary px-6 py-3 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity"
-            >
-              다시 시도
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* 플랜 없음 */}
-        {!loading && !error && !activePlan && (
-          <EmptyState
-            icon="map"
-            title="아직 플랜이 없어요"
-            description="Plan 페이지에서 Captain Bean과 대화해 첫 여행 계획을 만들어보세요."
-            ctaLabel="플랜 만들러 가기"
-            onCta={() => navigate('/plan')}
-          />
-        )}
-
-        {/* 플랜 있지만 일정 없음 */}
-        {!loading && !error && activePlan && tripDays.length === 0 && (
-          <EmptyState
-            icon="event_note"
-            title="일정이 아직 없어요"
-            description="Captain Bean에게 세부 일정을 요청해보세요."
-            ctaLabel="채팅하러 가기"
-            onCta={() => navigate('/plan')}
-          />
-        )}
-
-        {/* 정상 렌더링 */}
-        {!loading && activePlan && tripDays.length > 0 && activeDay && (
-          <>
-            {/* Hero Section */}
-            <div className="mb-10 md:mb-16">
-              <span className="block text-primary font-bold tracking-widest text-xs uppercase mb-2">
-                {activePlan.plan_type || '여행 일정'}
-              </span>
-              <h3 className="font-headline font-extrabold text-4xl md:text-5xl text-on-surface mb-8 md:mb-10">
-                {activePlan.title}
-              </h3>
-
-              {/* Day Selector */}
-              <div className="overflow-x-auto no-scrollbar">
-                <DaySelector
-                  days={tripDays}
-                  activeDayIndex={activeDayIndex}
-                  onSelect={setActiveDayIndex}
-                />
+          {/* 에러 */}
+          {error && !loading && (
+            <div className="flex flex-col items-center gap-4 py-20">
+              <div className="bg-red-50 text-red-600 text-sm font-medium rounded-xl px-5 py-4">
+                {error}
               </div>
+              <button
+                type="button"
+                onClick={refetch}
+                className="bg-primary text-white px-6 py-3 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity"
+              >
+                다시 시도
+              </button>
             </div>
+          )}
 
-            {/* Mobile panel switcher */}
-            <div className="flex md:hidden bg-surface-container rounded-xl p-1 mb-8">
-              {(['timeline', 'sidebar'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setMobileTab(tab)}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                    mobileTab === tab
+          {/* 플랜 없음 */}
+          {!loading && !error && !activePlan && (
+            <EmptyState
+              icon="map"
+              title="아직 플랜이 없어요"
+              description="Plan 페이지에서 Captain Bean과 대화해 첫 여행 계획을 만들어보세요."
+              ctaLabel="플랜 만들러 가기"
+              onCta={() => navigate('/plan')}
+            />
+          )}
+
+          {/* 플랜 있지만 일정 없음 */}
+          {!loading && !error && activePlan && tripDays.length === 0 && (
+            <EmptyState
+              icon="event_note"
+              title="일정이 아직 없어요"
+              description="Captain Bean에게 세부 일정을 요청해보세요."
+              ctaLabel="채팅하러 가기"
+              onCta={() => navigate('/plan')}
+            />
+          )}
+
+          {/* 정상 렌더링 */}
+          {!loading && activePlan && tripDays.length > 0 && activeDay && (
+            <>
+              {/* Hero Section */}
+              <div className="mb-10 md:mb-16 flex flex-col items-start gap-8">
+                <div className="inline-flex flex-col items-start gap-2">
+                  <span className="text-xs font-bold text-primary-dark tracking-[1.2px] uppercase">
+                    {activePlan.plan_type || '여행 일정'}
+                  </span>
+                  <h2 className="font-body font-normal text-5xl leading-[48px] text-on-surface">
+                    {activePlan.title || 'Trip Itinerary'}
+                  </h2>
+                </div>
+
+                {/* Day Selector */}
+                <div className="overflow-x-auto no-scrollbar w-full pb-2">
+                  <DaySelector
+                    days={tripDays}
+                    activeDayIndex={activeDayIndex}
+                    onSelect={setActiveDayIndex}
+                  />
+                </div>
+              </div>
+
+              {/* Mobile panel switcher */}
+              <div className="flex md:hidden bg-surface-container rounded-xl p-1 mb-8">
+                {(['timeline', 'sidebar'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setMobileTab(tab)}
+                    className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${mobileTab === tab
                       ? 'bg-surface-container-lowest text-primary shadow-ambient'
                       : 'text-on-surface-variant'
-                  }`}
-                >
-                  {tab === 'timeline' ? 'Timeline' : 'Stats'}
-                </button>
-              ))}
-            </div>
+                      }`}
+                  >
+                    {tab === 'timeline' ? 'Timeline' : 'Stats'}
+                  </button>
+                ))}
+              </div>
 
-            {/* Resizable two-panel layout */}
-            <div
-              ref={containerRef}
-              className={`flex items-start ${isDragging ? 'pointer-events-none select-none' : ''}`}
-            >
-              {/* Timeline panel */}
               <div
-                className={`${mobileTab === 'timeline' ? 'w-full md:w-auto' : 'hidden md:block'} relative min-w-0`}
-                style={isMobile ? undefined : { width: `${timelineWidth}%` }}
+                ref={containerRef}
+                className={`flex items-start ${isDragging ? 'pointer-events-none select-none' : ''}`}
               >
-                <div className="space-y-12 relative" key={activeDayIndex}>
-                  <TimelineThread />
-                  {currentStops.map((stop) => (
-                    <StopCard key={stop.id} stop={stop} />
-                  ))}
-                  {currentStops.length === 0 && (
-                    <p className="text-on-surface-variant text-sm py-8 text-center">
-                      이 날의 일정이 없습니다.
-                    </p>
+                {/* Timeline panel */}
+                <div
+                  className={`${mobileTab === 'timeline' ? 'w-full md:w-auto' : 'hidden md:block'} relative min-w-0`}
+                  style={isMobile ? undefined : { width: `${timelineWidth}%` }}
+                >
+                  <div className="space-y-12 relative" key={activeDayIndex}>
+                    <TimelineThread />
+                    {currentStops.map((stop) => (
+                      <StopCard key={stop.id} stop={stop} />
+                    ))}
+                    {currentStops.length === 0 && (
+                      <p className="text-on-surface-variant text-sm py-16 text-center pl-0">
+                        이 날의 일정이 없습니다.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <ResizeDivider
+                  direction="horizontal"
+                  onMouseDown={handleMouseDown}
+                  onTouchStart={handleTouchStart}
+                  isDragging={isDragging}
+                  className="hidden md:flex self-stretch"
+                />
+
+                <div
+                  className={`${mobileTab === 'sidebar' ? 'w-full md:w-auto' : 'hidden md:block'} flex-1 min-w-0 space-y-8 lg:sticky lg:top-28`}
+                >
+                  <DaySidebar day={activeDay} dayIndex={activeDayIndex + 1} />
+
+                  {activePlan.total_budget && Number(activePlan.total_budget) > 0 && (
+                    <div className="bg-white rounded-xl  border border-surface-container-high p-6 shadow-header">
+                      <h5 className="font-bold text-lg text-on-surface mb-4">
+                        플랜 예산
+                      </h5>
+                      <StatRow
+                        label="총 예산"
+                        value={`₩${Number(activePlan.total_budget).toLocaleString()}`}
+                        valueClassName="text-primary-dark"
+                      />
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Resize divider — desktop only */}
-              <ResizeDivider
-                direction="horizontal"
-                onMouseDown={handleMouseDown}
-                onTouchStart={handleTouchStart}
-                isDragging={isDragging}
-                className="hidden md:flex self-stretch"
-              />
-
-              {/* Sidebar panel */}
-              <div
-                className={`${mobileTab === 'sidebar' ? 'w-full md:w-auto' : 'hidden md:block'} flex-1 min-w-0 space-y-8 lg:sticky lg:top-28`}
-              >
-                <DaySidebar day={activeDay} dayIndex={activeDayIndex + 1} />
-
-                {/* 총 예산 */}
-                {activePlan.total_budget && Number(activePlan.total_budget) > 0 && (
-                  <div className="bg-surface-container-lowest rounded-xl p-6">
-                    <h5 className="font-headline font-bold text-lg text-on-surface mb-4">
-                      플랜 예산
-                    </h5>
-                    <StatRow
-                      label="총 예산"
-                      value={`₩${Number(activePlan.total_budget).toLocaleString()}`}
-                      valueClassName="text-primary"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Floating Action Buttons */}
-            <FABGroup onShare={() => {}} onAdd={() => {}} addIcon="add_task" />
-          </>
-        )}
+              {/* Floating Action Buttons */}
+              <FABGroup onShare={() => { }} onAdd={() => { }} addIcon="add_task" />
+            </>
+          )}
+        </div>
       </div>
     </AppLayout>
   );
