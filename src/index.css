@@ -8,6 +8,7 @@
   /* --- Primary Colors (New Green Theme) --- */
   --color-primary: #668369;
   --color-primary-dark: #106a68;
+  --color-on-primary: #ffffff;
   --color-primary-container: #dff2de;
   --color-on-primary-container: #106a68;
   --color-primary-fixed-dim: #cad8c9;
@@ -75,6 +76,10 @@
     word-wrap: normal;
     direction: ltr;
     -webkit-font-smoothing: antialiased;
+  }
+
+  .signature-gradient {
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
   }
 
   .bg-itinerary-gradient {

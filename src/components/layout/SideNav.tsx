@@ -11,6 +11,7 @@ interface SideNavProps {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { icon: 'chat', label: '채팅', href: '/chat' },
   { icon: 'checklist', label: '작업', href: '/tasks' },
   { icon: 'route', label: '일정', href: '/itinerary' },
   { icon: 'edit_note', label: 'Plan', href: '/plan' },
@@ -66,11 +67,13 @@ export default function SideNav({ width }: SideNavProps) {
 
       {/* Bottom Section */}
       <div className="pt-4 border-t border-surface-container">
-        {/* Plan New Leg Button */}
-        <button className="w-full bg-primary text-white rounded-full py-4 flex items-center justify-center gap-2 shadow-plan-btn hover:opacity-90 transition-all active:scale-95 cursor-pointer">
+        <Link
+          to="/plan"
+          className="w-full bg-primary text-white rounded-full py-4 flex items-center justify-center gap-2 shadow-plan-btn hover:opacity-90 transition-all active:scale-95"
+        >
           <span className="material-symbols-outlined text-on-primary text-lg">add</span>
           <span className="font-body font-semibold text-on-primary">새로운 일정</span>
-        </button>
+        </Link>
       </div>
     </aside>
   );
