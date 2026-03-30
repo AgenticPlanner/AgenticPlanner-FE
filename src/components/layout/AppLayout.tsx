@@ -41,7 +41,7 @@ export default function AppLayout({ children, topBarTitle }: AppLayoutProps) {
     <div className="min-h-screen flex bg-background">
       {/* Sidebar */}
       <div className="hidden md:flex flex-shrink-0 z-40 sticky top-0 h-screen">
-        <SideNav width={sidebarWidth} onOpenChat={() => setChatOpen(true)} />
+        <SideNav width={sidebarWidth} />
       </div>
       <div className={`relative flex-1 flex flex-col min-w-0 h-screen ${isDragging ? 'pointer-events-none select-none' : ''}`}>
 

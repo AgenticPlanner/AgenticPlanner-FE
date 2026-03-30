@@ -6,16 +6,16 @@ interface StopCardProps {
   stop: ItineraryStop;
 }
 
-const getCategoryLabel = (category: ItineraryStop['category']) => {
-  switch (category) {
-    case 'dining': return '식사';
-    case 'transit': return '이동';
-    case 'transport': return '이동';
-    case 'sightseeing': return '관광';
-    case 'stay': return '숙박';
-    default: return '장소';
-  }
+const CATEGORY_LABELS: Record<ItineraryStop['category'], string> = {
+  dining: '식사',
+  transit: '이동',
+  transport: '이동',
+  sightseeing: '관광',
+  stay: '숙박',
 };
+
+const getCategoryLabel = (category: ItineraryStop['category']) =>
+  CATEGORY_LABELS[category] ?? '장소';
 
 const formatTime = (start: string, end?: string) => {
   if (!start) return '';
@@ -183,13 +183,13 @@ export default function StopCard({ stop }: StopCardProps) {
             </p>
           )}
 
-          {/* {stop.tags && stop.tags.length > 0 && (
-            <div className="flex space-x-2 flex-wrap gap-2 mb-4">
+          {stop.tags && stop.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-4">
               {stop.tags.map((tag: string) => (
                 <Chip key={tag} label={tag} />
               ))}
             </div>
-          )} */}
+          )}
 
           <div className="flex space-x-4 flex-wrap gap-y-2 mt-4 items-center">
             <button type="button" className="bg-surface-container-high rounded-2xl text-xs font-bold text-secondary flex items-center gap-2 px-2 py-0.5 hover:brightness-95 transition-all">
