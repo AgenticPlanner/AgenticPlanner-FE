@@ -4,6 +4,8 @@ import type { AgentSession, AgentMessage, SSEEvent, Concept, TravelInfo } from '
 import { createAgentSession, getAgentSession, streamChat, selectConcept } from '@/api/agent';
 import { AppLayout } from '@/components/layout';
 import ChatSidebar from '@/components/features/chat/ChatSidebar';
+import PlanningProgress from '@/components/features/chat/PlanningProgress';
+import QuickReplyButtons from '@/components/features/chat/QuickReplyButtons';
 
 // ─── 로컬 타입 ────────────────────────────────────────────────────────────────
 
@@ -326,6 +328,15 @@ export default function ChatPage() {
           </div>
         )}
 
+        {/* 계획 생성 진행률 */}
+        <PlanningProgress
+          phase={session.phase}
+          isStreaming={isStreaming}
+          thinkingSteps={thinkingSteps.map((s) => s.text)}
+          crawlingStatus={crawlingStatus}
+          isDone={!!planId}
+        />
+
         {/* 메시지 목록 */}
         <div className="flex-1 overflow-y-auto flex flex-col gap-3 no-scrollbar pb-2">
           {messages.map((msg) => (
@@ -407,6 +418,14 @@ export default function ChatPage() {
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* 자동응답 버튼 */}
+        <QuickReplyButtons
+          phase={session.phase}
+          session={session}
+          onSend={handleSend}
+          isStreaming={isStreaming}
+        />
 
         {/* 입력창 */}
         <div className="flex gap-2 items-center bg-surface-container-lowest rounded-2xl px-4 py-3 shadow-ambient mt-2 shrink-0">
