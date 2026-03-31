@@ -23,6 +23,10 @@ export const getAgentSession = async (sessionId: string): Promise<AgentSession> 
   return res.data;
 };
 
+export const deleteSession = async (sessionId: string): Promise<void> => {
+  await apiClient.delete(`/api/v1/agent/sessions/${sessionId}/`);
+};
+
 export const selectConcept = async (
   sessionId: string,
   conceptId: string

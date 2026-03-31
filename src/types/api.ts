@@ -89,6 +89,15 @@ export interface SessionSummary {
   end_date: string;
   has_plan: boolean;
   created_at: string;
+  last_message: string | null;
+  message_count: number;
+}
+
+export interface AgentMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
 }
 
 export interface AgentSession {
@@ -98,6 +107,7 @@ export interface AgentSession {
   concepts: Concept[] | null;
   plan: APIPlan | null;
   created_at: string;
+  messages?: AgentMessage[];
 }
 
 export interface SSEEvent {

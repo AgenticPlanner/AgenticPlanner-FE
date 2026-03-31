@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import type { AgentSession, SSEEvent, Concept, TravelInfo } from '@/types/api';
+import type { AgentSession, AgentMessage, SSEEvent, Concept, TravelInfo } from '@/types/api';
 import { createAgentSession, getAgentSession, streamChat, selectConcept } from '@/api/agent';
 import { AppLayout } from '@/components/layout';
 import ChatSidebar from '@/components/features/chat/ChatSidebar';
@@ -89,7 +89,17 @@ export default function ChatPage() {
       return;
     }
     getAgentSession(sessionId)
-      .then(setSession)
+      .then((s) => {
+        setSession(s);
+        if (s.messages && s.messages.length > 0) {
+          setMessages(s.messages.map((m: AgentMessage) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            isStreaming: false,
+          })));
+        }
+      })
       .catch(() => navigate('/plan'));
   }, [sessionId, navigate]);
 

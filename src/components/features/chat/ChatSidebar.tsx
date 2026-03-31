@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { SessionSummary } from '@/types/api';
-import { getSessionList } from '@/api/agent';
+import { getSessionList, deleteSession } from '@/api/agent';
 
 interface ChatSidebarProps {
   currentSessionId: string | null;
@@ -21,12 +21,25 @@ function formatDate(dateStr: string): string {
 
 export default function ChatSidebar({ currentSessionId, onSelectSession, onNewChat }: ChatSidebarProps) {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   useEffect(() => {
     getSessionList()
       .then(setSessions)
       .catch(() => setSessions([]));
   }, []);
+
+  const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation();
+    if (!window.confirm('이 대화 기록을 삭제할까요?\n연결된 여행 계획은 유지됩니다.')) return;
+    try {
+      await deleteSession(sessionId);
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      if (currentSessionId === sessionId) onNewChat();
+    } catch {
+      alert('삭제에 실패했습니다.');
+    }
+  };
 
   return (
     <aside style={{
@@ -77,45 +90,80 @@ export default function ChatSidebar({ currentSessionId, onSelectSession, onNewCh
           const inProgress = IN_PROGRESS_PHASES.has(s.phase);
           const dateStr = formatDate(s.start_date);
 
+          const isHovered = hoveredId === s.id;
+
           return (
-            <button
+            <div
               key={s.id}
-              type="button"
-              onClick={() => onSelectSession(s.id)}
-              style={{
-                width: '100%',
-                padding: '10px 16px',
-                background: isActive ? '#e0e7ff' : 'transparent',
-                border: 'none',
-                borderLeft: isActive ? '3px solid #6366f1' : '3px solid transparent',
-                textAlign: 'left',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px',
-              }}
+              style={{ position: 'relative' }}
+              onMouseEnter={() => setHoveredId(s.id)}
+              onMouseLeave={() => setHoveredId(null)}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {s.destination || '목적지 미정'}
-                </span>
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  padding: '2px 6px',
-                  borderRadius: '9999px',
-                  background: inProgress ? '#fef9c3' : '#dcfce7',
-                  color: inProgress ? '#854d0e' : '#166534',
-                  marginLeft: '6px',
-                  flexShrink: 0,
-                }}>
-                  {inProgress ? '진행중' : '완성'}
-                </span>
-              </div>
-              {dateStr && (
-                <span style={{ fontSize: '12px', color: '#6b7280' }}>{dateStr}</span>
+              <button
+                type="button"
+                onClick={() => onSelectSession(s.id)}
+                style={{
+                  width: '100%',
+                  padding: '10px 16px',
+                  paddingRight: isHovered ? '36px' : '16px',
+                  background: isActive ? '#e0e7ff' : 'transparent',
+                  border: 'none',
+                  borderLeft: isActive ? '3px solid #6366f1' : '3px solid transparent',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {s.destination || '목적지 미정'}
+                  </span>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    padding: '2px 6px',
+                    borderRadius: '9999px',
+                    background: inProgress ? '#fef9c3' : '#dcfce7',
+                    color: inProgress ? '#854d0e' : '#166534',
+                    marginLeft: '6px',
+                    flexShrink: 0,
+                  }}>
+                    {inProgress ? '진행중' : '완성'}
+                  </span>
+                </div>
+                {dateStr && (
+                  <span style={{ fontSize: '12px', color: '#6b7280' }}>{dateStr}</span>
+                )}
+              </button>
+
+              {isHovered && (
+                <button
+                  type="button"
+                  onClick={(e) => handleDelete(e, s.id)}
+                  title="대화 삭제"
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    borderRadius: '6px',
+                    color: '#9ca3af',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                  onMouseLeave={e => (e.currentTarget.style.color = '#9ca3af')}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>delete</span>
+                </button>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
