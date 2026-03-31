@@ -7,8 +7,43 @@ import { StatRow } from '@/components/ui';
 import { usePanelResize } from '@/hooks/usePanelResize';
 import { usePlanContext } from '@/contexts/PlanContext';
 import { adaptPlanToTripDays } from '@/utils/adapters';
+import type { APIPlanExtraData } from '@/types/api';
 
 type ItineraryMobileTab = 'timeline' | 'sidebar';
+
+function PlanInfoBanner({ extraData }: { extraData?: APIPlanExtraData }) {
+  const weather = extraData?.weather;
+  const transport = extraData?.transport;
+  if (!weather && !transport) return null;
+
+  return (
+    <div className="flex gap-3 flex-wrap w-full">
+      {weather?.avg_temp_c != null && (
+        <div className="flex-1 min-w-[180px] bg-white border border-surface-container-high rounded-xl p-4 shadow-ambient">
+          <p className="text-xs text-on-surface-variant mb-1">
+            🌡️ {weather.month} 평균 기온
+          </p>
+          <p className="text-2xl font-bold text-on-surface">{weather.avg_temp_c}°C</p>
+          <p className="text-xs text-on-surface-variant mt-1">
+            최저 {weather.min_temp_c}° / 최고 {weather.max_temp_c}°
+          </p>
+          <p className="mt-2 text-xs text-on-surface bg-surface-container rounded-lg px-2 py-1">
+            👗 {weather.clothing_tip}
+          </p>
+        </div>
+      )}
+      {transport?.total_minutes != null && (
+        <div className="flex-1 min-w-[180px] bg-white border border-surface-container-high rounded-xl p-4 shadow-ambient">
+          <p className="text-xs text-on-surface-variant mb-1">
+            ✈️ 서울 → {transport.destination}
+          </p>
+          <p className="text-2xl font-bold text-on-surface">{transport.duration_desc}</p>
+          <p className="text-xs text-on-surface-variant mt-1">항공 이동시간 기준</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ItineraryPage() {
   const [searchParams] = useSearchParams();
@@ -120,6 +155,9 @@ export default function ItineraryPage() {
                     {activePlan.title || 'Trip Itinerary'}
                   </h2>
                 </div>
+
+                {/* 날씨 / 이동시간 배너 */}
+                <PlanInfoBanner extraData={activePlan.extra_data} />
 
                 {/* Day Selector */}
                 <div className="overflow-x-auto no-scrollbar w-full pb-2">

@@ -48,6 +48,27 @@ export interface APIPlanDay {
   items: APIPlanItem[];
 }
 
+export interface APIPlanWeather {
+  month: string;
+  avg_temp_c: number;
+  min_temp_c: number;
+  max_temp_c: number;
+  weather_desc: string;
+  clothing_tip: string;
+}
+
+export interface APIPlanTransport {
+  origin: string;
+  destination: string;
+  total_minutes: number;
+  duration_desc: string;
+}
+
+export interface APIPlanExtraData {
+  weather?: APIPlanWeather;
+  transport?: APIPlanTransport;
+}
+
 export interface APIPlan {
   id: string;
   title: string;
@@ -56,6 +77,7 @@ export interface APIPlan {
   end_date?: string;
   status?: string;
   total_budget?: string;
+  extra_data?: APIPlanExtraData;
   days: APIPlanDay[];
   members?: APIPlanMember[];
   created_at: string;
