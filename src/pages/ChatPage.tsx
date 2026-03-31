@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { AgentSession, SSEEvent, Concept, TravelInfo } from '@/types/api';
 import { createAgentSession, getAgentSession, streamChat, selectConcept } from '@/api/agent';
 import { AppLayout } from '@/components/layout';
+import ChatSidebar from '@/components/features/chat/ChatSidebar';
 
 // ─── 로컬 타입 ────────────────────────────────────────────────────────────────
 
@@ -73,6 +74,13 @@ export default function ChatPage() {
 
   // ── 세션 로드 / 없으면 빈 세션 자동 생성 ──────────────────────────────────
   useEffect(() => {
+    setMessages([]);
+    setThinkingSteps([]);
+    setCrawlingStatus(null);
+    setPlanId(null);
+    setError(null);
+    autoStartFired.current = false;
+
     if (!sessionId) {
       // SideNav의 "채팅" 링크 등으로 직접 접근 → 빈 세션 자동 생성
       createAgentSession(EMPTY_TRAVEL_INFO)
@@ -236,7 +244,14 @@ export default function ChatPage() {
   // ── 렌더 ─────────────────────────────────────────────────────────────────────
   return (
     <AppLayout topBarTitle={destination ? `${destination} 계획 세우기` : '채팅'}>
-      <div className="flex flex-col h-[calc(100vh-5rem)] max-w-3xl mx-auto px-4 pb-4">
+      <div className="flex h-[calc(100vh-5rem)]">
+        <ChatSidebar
+          currentSessionId={sessionId}
+          onSelectSession={(id) => navigate(`/chat?sessionId=${id}`)}
+          onNewChat={() => navigate('/plan')}
+        />
+        <main className="flex-1 flex flex-col min-w-0">
+      <div className="flex flex-col h-full max-w-3xl mx-auto px-4 pb-4 w-full">
 
         {/* 상단 바 */}
         <div className="flex items-center justify-between py-3 shrink-0">
@@ -424,6 +439,8 @@ export default function ChatPage() {
           </button>
         </div>
 
+      </div>
+        </main>
       </div>
     </AppLayout>
   );
