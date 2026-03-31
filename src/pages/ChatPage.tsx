@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { AgentSession, AgentMessage, SSEEvent, Concept, TravelInfo } from '@/types/api';
-import { getAgentSession, streamChat, selectConcept } from '@/api/agent';
+import { getAgentSession, getSessionList, streamChat, selectConcept } from '@/api/agent';
 import { AppLayout } from '@/components/layout';
 import ChatSidebar from '@/components/features/chat/ChatSidebar';
 import PlanningProgress from '@/components/features/chat/PlanningProgress';
@@ -75,7 +75,15 @@ export default function ChatPage() {
     autoStartFired.current = false;
 
     if (!sessionId) {
-      navigate('/plan', { replace: true });
+      getSessionList()
+        .then((sessions) => {
+          if (sessions.length > 0) {
+            navigate(`/chat?sessionId=${sessions[0].id}`, { replace: true });
+          } else {
+            navigate('/plan', { replace: true });
+          }
+        })
+        .catch(() => navigate('/plan', { replace: true }));
       return;
     }
     getAgentSession(sessionId)
