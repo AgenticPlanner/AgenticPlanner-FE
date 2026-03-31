@@ -30,16 +30,16 @@ export default function PlanPage() {
     try {
       setIsLoading(true);
       const travelInfo: TravelInfo = {
-        destination: formData.destination,
-        start_date: formData.departureDate,
-        end_date: formData.returnDate,
+        destination: formData.destination || '',
+        start_date: formData.departureDate || '',
+        end_date: formData.returnDate || '',
         group_size: 2,
         budget: formData.budgetMax,
         travel_style: formData.interests
           .filter((t) => t.selected)
           .map((t) => t.label)
           .join(', '),
-        special_requests: formData.additionalContext || undefined,
+        special_requests: formData.additionalContext || '',
       };
       const session = await createAgentSession(travelInfo);
       navigate(`/chat?sessionId=${session.id}&autoStart=true`);
