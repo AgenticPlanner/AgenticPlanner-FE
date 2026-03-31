@@ -81,6 +81,16 @@ export interface Concept {
   image_url?: string;
 }
 
+export interface SessionSummary {
+  id: string;
+  phase: string;
+  destination: string;
+  start_date: string;
+  end_date: string;
+  has_plan: boolean;
+  created_at: string;
+}
+
 export interface AgentSession {
   id: string;
   phase: string;

@@ -1,8 +1,13 @@
 import apiClient from './client';
-import type { AgentSession, TravelInfo, SSEEvent } from '../types/api';
+import type { AgentSession, SessionSummary, TravelInfo, SSEEvent } from '../types/api';
 
 export const listAgentSessions = async (): Promise<AgentSession[]> => {
   const res = await apiClient.get<AgentSession[]>('/api/v1/agent/sessions/');
+  return res.data;
+};
+
+export const getSessionList = async (): Promise<SessionSummary[]> => {
+  const res = await apiClient.get<SessionSummary[]>('/api/v1/agent/sessions/');
   return res.data;
 };
 
