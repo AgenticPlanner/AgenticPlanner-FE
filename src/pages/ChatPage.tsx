@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { AgentSession, AgentMessage, SSEEvent, Concept, TravelInfo } from '@/types/api';
-import { createAgentSession, getAgentSession, streamChat, selectConcept } from '@/api/agent';
+import { getAgentSession, streamChat, selectConcept } from '@/api/agent';
 import { AppLayout } from '@/components/layout';
 import ChatSidebar from '@/components/features/chat/ChatSidebar';
 import PlanningProgress from '@/components/features/chat/PlanningProgress';
@@ -29,15 +29,6 @@ interface CrawlingStatus {
 }
 
 // ─── 헬퍼 ─────────────────────────────────────────────────────────────────────
-
-const EMPTY_TRAVEL_INFO: TravelInfo = {
-  destination: '',
-  start_date: '',
-  end_date: '',
-  group_size: 2,
-  budget: 0,
-  travel_style: '',
-};
 
 function buildTravelInfoMessage(info: TravelInfo): string {
   const lines: string[] = ['안녕하세요! 아래 정보로 여행 계획을 만들어주세요.', ''];
@@ -84,10 +75,7 @@ export default function ChatPage() {
     autoStartFired.current = false;
 
     if (!sessionId) {
-      // SideNav의 "채팅" 링크 등으로 직접 접근 → 빈 세션 자동 생성
-      createAgentSession(EMPTY_TRAVEL_INFO)
-        .then((s) => navigate(`/chat?sessionId=${s.id}`, { replace: true }))
-        .catch(() => navigate('/plan'));
+      navigate('/plan', { replace: true });
       return;
     }
     getAgentSession(sessionId)
