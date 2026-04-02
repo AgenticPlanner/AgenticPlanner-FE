@@ -7,9 +7,6 @@ import { StatRow } from '@/components/ui';
 import { usePanelResize } from '@/hooks/usePanelResize';
 import { usePlanContext } from '@/contexts/PlanContext';
 import { adaptPlanToTripDays } from '@/utils/adapters';
-import { getPlanBudgetSummary } from '@/api/plans';
-import type { BudgetSummary } from '@/api/plans';
-
 type ItineraryMobileTab = 'timeline' | 'sidebar';
 
 export default function ItineraryPage() {
@@ -25,15 +22,6 @@ export default function ItineraryPage() {
       setActivePlanId(urlPlanId);
     }
   }, [urlPlanId, activePlanId, setActivePlanId]);
-
-  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
-
-  useEffect(() => {
-    if (!activePlanId) return;
-    getPlanBudgetSummary(activePlanId)
-      .then(setBudgetSummary)
-      .catch(() => {});
-  }, [activePlanId]);
 
   const tripDays = activePlan ? adaptPlanToTripDays(activePlan) : [];
 
@@ -136,7 +124,6 @@ export default function ItineraryPage() {
                 <PlanInfoBanner
                   weather={activePlan.extra_data?.weather}
                   transport={activePlan.extra_data?.transport}
-                  budgetSummary={budgetSummary}
                 />
 
                 {/* Day Selector */}

@@ -37,6 +37,7 @@ export interface ItineraryStop {
   tags?: string[];
   amount?: string;
   externalLink?: string;
+  ticketUrl?: string;
   status?: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 }
 
