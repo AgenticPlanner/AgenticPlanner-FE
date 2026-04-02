@@ -389,8 +389,8 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* result phase — 플랜 완성 알림 */}
-          {session.phase === 'result' && planId && (
+          {/* result/editing phase — 플랜 완성·수정 알림 */}
+          {(session.phase === 'result' || session.phase === 'editing') && planId && (
             <div className="bg-surface-container-low rounded-2xl p-6 text-center">
               <p className="font-headline font-bold text-on-surface text-lg mb-3">
                 여행 계획이 완성됐어요!
@@ -437,7 +437,7 @@ export default function ChatPage() {
             placeholder={
               isStreaming
                 ? 'AI가 응답 중...'
-                : session.phase === 'result'
+                : (session.phase === 'result' || session.phase === 'editing')
                   ? '추가 수정사항을 입력하세요'
                   : '메시지를 입력하세요'
             }

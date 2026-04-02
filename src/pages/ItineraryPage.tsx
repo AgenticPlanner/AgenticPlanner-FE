@@ -1,49 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout';
-import { DaySelector, TimelineThread, StopCard, DaySidebar, ItinerarySkeleton } from '@/components/features/itinerary';
+import { DaySelector, TimelineThread, StopCard, DaySidebar, ItinerarySkeleton, PlanInfoBanner } from '@/components/features/itinerary';
 import { FABGroup, ResizeDivider, EmptyState } from '@/components/common';
 import { StatRow } from '@/components/ui';
 import { usePanelResize } from '@/hooks/usePanelResize';
 import { usePlanContext } from '@/contexts/PlanContext';
 import { adaptPlanToTripDays } from '@/utils/adapters';
-import type { APIPlanExtraData } from '@/types/api';
+import { getPlanBudgetSummary } from '@/api/plans';
+import type { BudgetSummary } from '@/api/plans';
 
 type ItineraryMobileTab = 'timeline' | 'sidebar';
-
-function PlanInfoBanner({ extraData }: { extraData?: APIPlanExtraData }) {
-  const weather = extraData?.weather;
-  const transport = extraData?.transport;
-  if (!weather && !transport) return null;
-
-  return (
-    <div className="flex gap-3 flex-wrap w-full">
-      {weather?.avg_temp_c != null && (
-        <div className="flex-1 min-w-[180px] bg-white border border-surface-container-high rounded-xl p-4 shadow-ambient">
-          <p className="text-xs text-on-surface-variant mb-1">
-            🌡️ {weather.month} 평균 기온
-          </p>
-          <p className="text-2xl font-bold text-on-surface">{weather.avg_temp_c}°C</p>
-          <p className="text-xs text-on-surface-variant mt-1">
-            최저 {weather.min_temp_c}° / 최고 {weather.max_temp_c}°
-          </p>
-          <p className="mt-2 text-xs text-on-surface bg-surface-container rounded-lg px-2 py-1">
-            👗 {weather.clothing_tip}
-          </p>
-        </div>
-      )}
-      {transport?.total_minutes != null && (
-        <div className="flex-1 min-w-[180px] bg-white border border-surface-container-high rounded-xl p-4 shadow-ambient">
-          <p className="text-xs text-on-surface-variant mb-1">
-            ✈️ 서울 → {transport.destination}
-          </p>
-          <p className="text-2xl font-bold text-on-surface">{transport.duration_desc}</p>
-          <p className="text-xs text-on-surface-variant mt-1">항공 이동시간 기준</p>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function ItineraryPage() {
   const [searchParams] = useSearchParams();
@@ -58,6 +25,15 @@ export default function ItineraryPage() {
       setActivePlanId(urlPlanId);
     }
   }, [urlPlanId, activePlanId, setActivePlanId]);
+
+  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
+
+  useEffect(() => {
+    if (!activePlanId) return;
+    getPlanBudgetSummary(activePlanId)
+      .then(setBudgetSummary)
+      .catch(() => {});
+  }, [activePlanId]);
 
   const tripDays = activePlan ? adaptPlanToTripDays(activePlan) : [];
 
@@ -156,8 +132,12 @@ export default function ItineraryPage() {
                   </h2>
                 </div>
 
-                {/* 날씨 / 이동시간 배너 */}
-                <PlanInfoBanner extraData={activePlan.extra_data} />
+                {/* 날씨 / 이동시간 / 예산 배너 */}
+                <PlanInfoBanner
+                  weather={activePlan.extra_data?.weather}
+                  transport={activePlan.extra_data?.transport}
+                  budgetSummary={budgetSummary}
+                />
 
                 {/* Day Selector */}
                 <div className="overflow-x-auto no-scrollbar w-full pb-2">
@@ -219,7 +199,17 @@ export default function ItineraryPage() {
                 <div
                   className={`${mobileTab === 'sidebar' ? 'w-full md:w-auto' : 'hidden md:block'} flex-1 min-w-0 space-y-8 lg:sticky lg:top-28`}
                 >
-                  <DaySidebar day={activeDay} dayIndex={activeDayIndex + 1} />
+                  <DaySidebar
+                    day={activeDay}
+                    dayIndex={activeDayIndex + 1}
+                    actualSpent={(() => {
+                      const rawDay = activePlan.days?.[activeDayIndex];
+                      if (!rawDay) return 0;
+                      return rawDay.items
+                        .filter(i => i.is_done && i.actual_amount)
+                        .reduce((sum, i) => sum + Number(i.actual_amount), 0);
+                    })()}
+                  />
 
                   {activePlan.total_budget && Number(activePlan.total_budget) > 0 && (
                     <div className="bg-white rounded-xl  border border-surface-container-high p-6 shadow-header">

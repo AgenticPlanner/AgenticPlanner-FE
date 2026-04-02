@@ -6,9 +6,10 @@ import { MapPin } from 'lucide-react';
 interface DaySidebarProps {
   day: TripDay;
   dayIndex: number;
+  actualSpent?: number;
 }
 
-export default function DaySidebar({ day, dayIndex }: DaySidebarProps) {
+export default function DaySidebar({ day, dayIndex, actualSpent }: DaySidebarProps) {
   return (
     <div className="space-y-8 font-body">
 
@@ -49,6 +50,13 @@ export default function DaySidebar({ day, dayIndex }: DaySidebarProps) {
               value={day.stats.budgetSpent}
               valueClassName="text-primary"
             />
+            {actualSpent != null && actualSpent > 0 && (
+              <StatRow
+                label="실소비"
+                value={`₩${actualSpent.toLocaleString()}`}
+                valueClassName="text-green-600"
+              />
+            )}
           </div>
         </div>
       </div>
