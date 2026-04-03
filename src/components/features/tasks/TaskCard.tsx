@@ -84,29 +84,40 @@ export default function TaskCard({ task, featured = false }: TaskCardProps) {
           )}
 
           {/* CTA Button */}
-          {featured ? (
-            task.ctaUrl ? (
-              <a href={task.ctaUrl} target="_blank" rel="noopener noreferrer">
-                <Button variant="primary" size="md">{task.ctaLabel}</Button>
-              </a>
-            ) : (
-              <Button variant="primary" size="md">{task.ctaLabel}</Button>
-            )
+          {task.ctaUrl && !isDone ? (
+            <a
+              href={task.ctaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                padding: '6px 14px',
+                background: task.ctaColor ?? '#1a73e8',
+                color: '#fff',
+                borderRadius: '7px',
+                fontSize: '12px',
+                fontWeight: 500,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              {task.isReview && (
+                <span style={{ fontSize: '10px' }}>
+                  {task.ctaLabel.includes('네이버') ? '🔍' : '▶'}
+                </span>
+              )}
+              {task.ctaLabel}
+            </a>
           ) : (
-            task.ctaUrl && !isDone ? (
-              <a href={task.ctaUrl} target="_blank" rel="noopener noreferrer" className="w-full">
-                <Button variant="secondary" size="md" className="w-full">{task.ctaLabel}</Button>
-              </a>
-            ) : (
-              <Button
-                variant={isDone ? 'ghost' : 'secondary'}
-                size="md"
-                disabled={isDone}
-                className="w-full"
-              >
-                {task.ctaLabel}
-              </Button>
-            )
+            <Button
+              variant={isDone ? 'ghost' : 'secondary'}
+              size="md"
+              disabled={isDone}
+              className={featured ? '' : 'w-full'}
+            >
+              {task.ctaLabel}
+            </Button>
           )}
         </div>
       </Card>

@@ -8,17 +8,100 @@ import { SectionHeader } from '../components/ui';
 import { ProgressBar, EmptySlot, EmptyState } from '../components/common';
 import { usePlanContext } from '../contexts/PlanContext';
 
-const getFallbackUrl = (item: APIPlanItem, destination: string): string => {
+// ── 카테고리 설정 ──────────────────────────────────────────────────
+const CATEGORY_CONFIG: Record<string, { bookingLabel: string; color: string }> = {
+  TRANSPORT:     { bookingLabel: '항공권 예약',  color: '#1a73e8' },
+  ACCOMMODATION: { bookingLabel: '숙소 예약',    color: '#6c5ce7' },
+  ACTIVITY:      { bookingLabel: '액티비티 예약', color: '#f39c12' },
+  RESTAURANT:    { bookingLabel: '식당 검색',    color: '#e17055' },
+  OTHER:         { bookingLabel: '검색하기',     color: '#636e72' },
+};
+
+// ── 국내 여행지 판단 ───────────────────────────────────────────────
+const isKoreanDestination = (destination: string): boolean => {
+  const koreanCities = [
+    '서울', '부산', '제주', '인천', '대구', '대전', '광주',
+    '수원', '강릉', '경주', '전주', '춘천', '속초', '여수',
+  ];
+  return koreanCities.some(city => destination.includes(city))
+    || /[가-힣]/.test(destination);
+};
+
+// ── 리뷰 검색 URL ─────────────────────────────────────────────────
+const getReviewUrl = (
+  item: APIPlanItem,
+  destination: string,
+  platform: 'naver' | 'youtube' = 'naver',
+): string => {
+  const query = `${destination} ${item.title} 여행 리뷰`;
+  const q = encodeURIComponent(query);
+  if (platform === 'youtube') return `https://www.youtube.com/results?search_query=${q}`;
+  return `https://search.naver.com/search.naver?query=${q}&where=blog`;
+};
+
+// ── 예약 필요 여부 ─────────────────────────────────────────────────
+const needsBooking = (item: APIPlanItem): boolean => {
+  if (item.category === 'TRANSPORT') return true;
+  if (item.category === 'ACCOMMODATION') return true;
+  if (item.tags?.includes('예약필요')) return true;
+  if (item.external_link) return true;
+  return false;
+};
+
+// ── 예약 폴백 URL (booking 전용) ──────────────────────────────────
+const getFallbackBookingUrl = (item: APIPlanItem, destination: string): string => {
   const q = encodeURIComponent(`${destination} ${item.title}`);
+  const loc = encodeURIComponent(item.location || destination);
   switch (item.category) {
-    case 'ACCOMMODATION': return `https://hotels.naver.com/searchpage/hotel?query=${q}`;
+    case 'TRANSPORT':     return `https://flight.naver.com/flights?query=${q}`;
+    case 'ACCOMMODATION': return `https://hotels.naver.com/searchpage/hotel?query=${loc}`;
     case 'RESTAURANT':    return `https://map.naver.com/v5/search/${q}`;
     case 'ACTIVITY':      return `https://www.klook.com/ko/search/?query=${q}`;
-    case 'TRANSPORT':     return `https://flight.naver.com/flights/international?query=${q}`;
-    default:              return `https://search.naver.com/search.naver?query=${q}`;
+    default:              return `https://www.google.com/search?q=${q}`;
   }
 };
 
+// ── 액션 URL · 레이블 · 색상 결정 ────────────────────────────────
+const getActionConfig = (
+  item: APIPlanItem,
+  destination: string,
+): { url: string; label: string; color: string; isReview: boolean } => {
+  const cfg = CATEGORY_CONFIG[item.category] ?? CATEGORY_CONFIG['OTHER'];
+
+  if (needsBooking(item)) {
+    return {
+      url: item.external_link || getFallbackBookingUrl(item, destination),
+      label: cfg.bookingLabel,
+      color: cfg.color,
+      isReview: false,
+    };
+  }
+
+  const dom = isKoreanDestination(destination);
+  return {
+    url: getReviewUrl(item, destination, dom ? 'naver' : 'youtube'),
+    label: dom ? '네이버 리뷰' : '유튜브 리뷰',
+    color: dom ? '#03c75a' : '#ff0000',
+    isReview: true,
+  };
+};
+
+// ── dev 검증 ──────────────────────────────────────────────────────
+if (process.env.NODE_ENV === 'development') {
+  const testCases = [
+    { category: 'TRANSPORT',     title: '서울→부산 KTX', tags: [], external_link: '', dest: '부산' },
+    { category: 'ACTIVITY',      title: '경복궁',        tags: ['무료'], external_link: '', dest: '서울' },
+    { category: 'ACCOMMODATION', title: '파리 호텔',     tags: [], external_link: '', dest: '파리' },
+    { category: 'ACTIVITY',      title: '에펠탑 견학',   tags: ['자유관광'], external_link: '', dest: '파리' },
+    { category: 'RESTAURANT',    title: '이치란 라멘',   tags: [], external_link: '', dest: '도쿄' },
+  ];
+  testCases.forEach(tc => {
+    const action = getActionConfig(tc as unknown as APIPlanItem, tc.dest);
+    console.log(`[${tc.category}] ${tc.title} → ${action.label} | ${action.url.slice(0, 60)}`);
+  });
+}
+
+// ── 헬퍼 함수 ─────────────────────────────────────────────────────
 const categoryToIcon = (category: APIPlanItem['category']): string => {
   switch (category) {
     case 'RESTAURANT':    return 'restaurant';
@@ -36,15 +119,17 @@ const statusToTaskStatus = (status: APIPlanItem['status']): Task['status'] => {
 };
 
 const itemToTask = (item: APIPlanItem, destination: string): Task => {
-  const ctaUrl = item.external_link || getFallbackUrl(item, destination);
+  const action = getActionConfig(item, destination);
   return {
     id: item.id,
     title: item.title,
     description: item.description || item.subtitle || item.location || '',
     status: statusToTaskStatus(item.status),
     icon: categoryToIcon(item.category),
-    ctaLabel: item.external_link ? '예약하기' : '검색하기',
-    ctaUrl,
+    ctaLabel: action.label,
+    ctaUrl: action.url,
+    ctaColor: action.color,
+    isReview: action.isReview,
     assignees: [],
   };
 };
