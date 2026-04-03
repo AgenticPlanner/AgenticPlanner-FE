@@ -85,27 +85,28 @@ export default function TaskCard({ task, featured = false }: TaskCardProps) {
 
           {/* CTA Button */}
           {featured ? (
-            <Button
-              variant="primary"
-              size="md"
-              onClick={() => {
-                /* CTA action */
-              }}
-            >
-              {task.ctaLabel}
-            </Button>
+            task.ctaUrl ? (
+              <a href={task.ctaUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="primary" size="md">{task.ctaLabel}</Button>
+              </a>
+            ) : (
+              <Button variant="primary" size="md">{task.ctaLabel}</Button>
+            )
           ) : (
-            <Button
-              variant={isDone ? 'ghost' : 'secondary'}
-              size="md"
-              disabled={isDone}
-              onClick={() => {
-                /* CTA action */
-              }}
-              className="w-full"
-            >
-              {task.ctaLabel}
-            </Button>
+            task.ctaUrl && !isDone ? (
+              <a href={task.ctaUrl} target="_blank" rel="noopener noreferrer" className="w-full">
+                <Button variant="secondary" size="md" className="w-full">{task.ctaLabel}</Button>
+              </a>
+            ) : (
+              <Button
+                variant={isDone ? 'ghost' : 'secondary'}
+                size="md"
+                disabled={isDone}
+                className="w-full"
+              >
+                {task.ctaLabel}
+              </Button>
+            )
           )}
         </div>
       </Card>

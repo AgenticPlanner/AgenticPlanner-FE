@@ -10,10 +10,10 @@ export default function TagChip({ label, selected = false, onClick, className = 
     <button
       type="button"
       onClick={onClick}
-      className={`px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors hover:bg-primary-container ${
+      className={`px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all ${
         selected
-          ? 'bg-secondary-container text-on-secondary-container'
-          : 'bg-surface-container-low text-on-surface-variant'
+          ? 'bg-primary text-on-primary hover:opacity-90'
+          : 'bg-surface-container-low text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container'
       } ${className}`}
     >
       {label}

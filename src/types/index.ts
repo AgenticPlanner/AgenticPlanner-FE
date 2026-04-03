@@ -20,6 +20,7 @@ export interface Task {
   icon: string;
   assignees?: string[]; // avatar URLs
   ctaLabel: string;
+  ctaUrl?: string;
 }
 
 export interface ItineraryStop {
@@ -36,6 +37,7 @@ export interface ItineraryStop {
   tags?: string[];
   amount?: string;
   externalLink?: string;
+  ticketUrl?: string;
   status?: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 }
 

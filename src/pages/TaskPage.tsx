@@ -8,6 +8,17 @@ import { SectionHeader } from '../components/ui';
 import { ProgressBar, EmptySlot, EmptyState } from '../components/common';
 import { usePlanContext } from '../contexts/PlanContext';
 
+const getFallbackUrl = (item: APIPlanItem, destination: string): string => {
+  const q = encodeURIComponent(`${destination} ${item.title}`);
+  switch (item.category) {
+    case 'ACCOMMODATION': return `https://hotels.naver.com/searchpage/hotel?query=${q}`;
+    case 'RESTAURANT':    return `https://map.naver.com/v5/search/${q}`;
+    case 'ACTIVITY':      return `https://www.klook.com/ko/search/?query=${q}`;
+    case 'TRANSPORT':     return `https://flight.naver.com/flights/international?query=${q}`;
+    default:              return `https://search.naver.com/search.naver?query=${q}`;
+  }
+};
+
 const categoryToIcon = (category: APIPlanItem['category']): string => {
   switch (category) {
     case 'RESTAURANT':    return 'restaurant';
@@ -24,15 +35,19 @@ const statusToTaskStatus = (status: APIPlanItem['status']): Task['status'] => {
   return 'todo';
 };
 
-const itemToTask = (item: APIPlanItem): Task => ({
-  id: item.id,
-  title: item.title,
-  description: item.description || item.subtitle || item.location || '',
-  status: statusToTaskStatus(item.status),
-  icon: categoryToIcon(item.category),
-  ctaLabel: item.external_link ? '예약하기' : '상세 보기',
-  assignees: [],
-});
+const itemToTask = (item: APIPlanItem, destination: string): Task => {
+  const ctaUrl = item.external_link || getFallbackUrl(item, destination);
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description || item.subtitle || item.location || '',
+    status: statusToTaskStatus(item.status),
+    icon: categoryToIcon(item.category),
+    ctaLabel: item.external_link ? '예약하기' : '검색하기',
+    ctaUrl,
+    assignees: [],
+  };
+};
 
 export default function TaskPage() {
   const navigate = useNavigate();
@@ -47,7 +62,11 @@ export default function TaskPage() {
       );
   }, [activePlan]);
 
-  const tasks: Task[] = useMemo(() => allItems.map(itemToTask), [allItems]);
+  const destination = activePlan?.title?.split(' ')[0] ?? '';
+  const tasks: Task[] = useMemo(
+    () => allItems.map((item) => itemToTask(item, destination)),
+    [allItems, destination],
+  );
 
   const doneCount = tasks.filter((t) => t.status === 'done').length;
   const progressPercentage = tasks.length > 0

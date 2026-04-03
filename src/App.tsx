@@ -10,6 +10,7 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const TaskPage = lazy(() => import('./pages/TaskPage'));
 const ItineraryPage = lazy(() => import('./pages/ItineraryPage'));
 const PlanPage = lazy(() => import('./pages/PlanPage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
 
 const Spinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-background">
@@ -58,6 +59,16 @@ export default function App() {
             <Suspense fallback={<Spinner />}>
               <ProtectedRoute>
                 <PlanPage />
+              </ProtectedRoute>
+            </Suspense>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <Suspense fallback={<Spinner />}>
+              <ProtectedRoute>
+                <ChatPage />
               </ProtectedRoute>
             </Suspense>
           }

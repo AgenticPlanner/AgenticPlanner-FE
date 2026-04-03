@@ -1,34 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PlanFormData } from '@/types';
+import type { TravelInfo } from '@/types/api';
 import { AppLayout } from '@/components/layout';
-import { PlanInputPanel, CaptainBeanChat } from '@/components/features/plan';
-import { ResizeDivider } from '@/components/common';
-import { usePanelResize } from '@/hooks/usePanelResize';
-import { useAgentChat } from '@/hooks/useAgentChat';
-import { usePlans } from '@/hooks/usePlans';
+import { PlanInputPanel } from '@/components/features/plan';
+import { createAgentSession } from '@/api/agent';
 import { defaultInterestTags, BUDGET_MIN, BUDGET_MAX } from '@/data/tripData';
 
 export default function PlanPage() {
   const navigate = useNavigate();
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
-
-  const { size: leftPanelPercent, isDragging, handleMouseDown, handleTouchStart } = usePanelResize({
-    direction: 'horizontal',
-    initialSize: 45,
-    minSize: 30,
-    maxSize: 65,
-    unit: 'percent',
-    storageKey: 'plan-left-panel',
-    containerRef,
-  });
 
   const [formData, setFormData] = useState<PlanFormData>({
     destination: '',
@@ -40,8 +20,7 @@ export default function PlanPage() {
     additionalContext: '',
   });
 
-  const { messages, isStreaming, sendMessage, stopStreaming } = useAgentChat();
-  const { createPlan } = usePlans();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleFormChange = (updated: Partial<PlanFormData>) => {
     setFormData((prev) => ({ ...prev, ...updated }));
@@ -49,47 +28,37 @@ export default function PlanPage() {
 
   const handleGenerateItinerary = async () => {
     try {
-      const plan = await createPlan({ title: formData.destination || '새 여행 플랜' });
-      navigate(`/itinerary?planId=${plan.id}`);
-    } catch {
-      // 에러는 usePlans 내부에서 관리
+      setIsLoading(true);
+      const travelInfo: TravelInfo = {
+        destination: formData.destination || '',
+        start_date: formData.departureDate || '',
+        end_date: formData.returnDate || '',
+        group_size: 2,
+        budget: formData.budgetMax,
+        travel_style: formData.interests
+          .filter((t) => t.selected)
+          .map((t) => t.label)
+          .join(', '),
+        special_requests: formData.additionalContext || '',
+      };
+      const session = await createAgentSession(travelInfo);
+      navigate(`/chat?sessionId=${session.id}&autoStart=true`);
+    } catch (error) {
+      console.error('세션 생성 실패:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <AppLayout topBarTitle="플랜">
-      <div
-        ref={containerRef}
-        className={`flex overflow-hidden bg-surface h-[calc(100vh-5rem)] ${
-          isDragging ? 'pointer-events-none select-none' : ''
-        }`}
-      >
-        {/* Input panel — full width on mobile, resizable on desktop */}
-        <div
-          className="h-full flex flex-col"
-          style={isMobile ? { width: '100%' } : { width: `${leftPanelPercent}%` }}
-        >
+      <div className="flex overflow-hidden bg-surface h-[calc(100vh-5rem)]">
+        <div className="h-full flex flex-col w-full">
           <PlanInputPanel
             formData={formData}
             onChange={handleFormChange}
             onSubmit={handleGenerateItinerary}
-          />
-        </div>
-
-        {/* Resize divider + Chat panel — desktop only */}
-        <ResizeDivider
-          direction="horizontal"
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          isDragging={isDragging}
-          className="hidden md:flex h-full"
-        />
-        <div className="hidden md:flex flex-col flex-1 min-w-0 h-full">
-          <CaptainBeanChat
-            messages={messages}
-            onSendMessage={sendMessage}
-            isStreaming={isStreaming}
-            onUnmount={stopStreaming}
+            isLoading={isLoading}
           />
         </div>
       </div>

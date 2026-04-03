@@ -1,6 +1,21 @@
 import apiClient from './client';
 import type { APIPlan, APIPlanDay, APIPlanItem } from '../types/api';
 
+export interface BudgetSummary {
+  plan_id: string;
+  total_estimated: number;
+  total_actual: number;
+  done_count: number;
+  total_count: number;
+  completion_rate: number;
+  breakdown: Record<string, {
+    estimated: number;
+    actual: number;
+    count: number;
+    done_count: number;
+  }>;
+}
+
 // Plans
 export const getPlans = (): Promise<APIPlan[]> =>
   apiClient.get<APIPlan[]>('/api/v1/plans/').then(r => r.data);
@@ -29,3 +44,42 @@ export const getPlanDays = (planPk: string): Promise<APIPlanDay[]> =>
 // Items (nested)
 export const getDayItems = (planPk: string, dayPk: string): Promise<APIPlanItem[]> =>
   apiClient.get<APIPlanItem[]>(`/api/v1/plans/${planPk}/days/${dayPk}/items/`).then(r => r.data);
+
+// POST /api/v1/plans/{id}/enrich/ — external_link 없는 아이템에 예약 URL 재생성
+export const enrichPlanLinks = (planId: string): Promise<{ enriched_count: number }> =>
+  apiClient.post<{ enriched_count: number }>(`/api/v1/plans/${planId}/enrich/`).then(r => r.data);
+
+// 예산 요약 조회
+export const getPlanBudgetSummary = async (planId: string): Promise<BudgetSummary> => {
+  const res = await apiClient.get(`/api/v1/plans/${planId}/budget-summary/`);
+  return res.data;
+};
+
+// 완료 토글
+export const toggleItemDone = async (
+  itemId: string,
+  actualAmount?: number,
+): Promise<APIPlanItem> => {
+  const res = await apiClient.patch(
+    `/api/v1/plans/items/${itemId}/toggle-done/`,
+    actualAmount != null ? { actual_amount: actualAmount } : {},
+  );
+  return res.data;
+};
+
+// 티켓 업로드
+export const uploadTicket = async (itemId: string, file: File): Promise<APIPlanItem> => {
+  const form = new FormData();
+  form.append('ticket', file);
+  const res = await apiClient.post(
+    `/api/v1/plans/items/${itemId}/upload-ticket/`,
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+  return res.data;
+};
+
+// 티켓 삭제
+export const deleteTicket = async (itemId: string): Promise<void> => {
+  await apiClient.delete(`/api/v1/plans/items/${itemId}/upload-ticket/`);
+};

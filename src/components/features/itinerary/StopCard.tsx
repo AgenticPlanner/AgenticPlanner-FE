@@ -1,6 +1,8 @@
+import { useState, useRef } from 'react';
 import type { ItineraryStop } from '@/types/index';
 import { Badge, Chip, Card } from '@/components/ui';
 import { CategoryIcon } from '@/components/common';
+import { uploadTicket } from '@/api/plans';
 
 interface StopCardProps {
   stop: ItineraryStop;
@@ -30,6 +32,20 @@ const formatAmount = (amount: string) => {
 };
 
 export default function StopCard({ stop }: StopCardProps) {
+  const [localTicketUrl, setLocalTicketUrl] = useState(stop.ticketUrl);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const updated = await uploadTicket(stop.id, file);
+      if (updated.ticket_url) setLocalTicketUrl(updated.ticket_url);
+    } finally {
+      e.target.value = '';
+    }
+  };
+
   const timeLabel = formatTime(stop.time, stop.endTime);
   const badgeLabel = stop.status === 'CONFIRMED' ? 'Confirmed' : stop.badge;
 
@@ -107,10 +123,27 @@ export default function StopCard({ stop }: StopCardProps) {
 
               {/* Action buttons */}
               <div className="flex space-x-3 flex-wrap gap-2">
-                <button type="button" className="bg-surface-container-high px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 hover:bg-surface-container transition-colors">
-                  <span className="material-symbols-outlined text-sm">confirmation_number</span>
-                  <span>예매 보기</span>
-                </button>
+                {localTicketUrl ? (
+                  <a
+                    href={localTicketUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-surface-container-high px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 hover:bg-surface-container transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">confirmation_number</span>
+                    <span>예매 티켓 보기</span>
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-surface-container-high px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 hover:bg-surface-container transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">upload_file</span>
+                    <span>파일 등록</span>
+                  </button>
+                )}
+                <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileChange} />
                 {stop.externalLink && (
                   <a
                     href={stop.externalLink}
@@ -192,10 +225,33 @@ export default function StopCard({ stop }: StopCardProps) {
           )}
 
           <div className="flex space-x-4 flex-wrap gap-y-2 mt-4 items-center">
-            <button type="button" className="bg-surface-container-high rounded-2xl text-xs font-bold text-secondary flex items-center gap-2 px-2 py-0.5 hover:brightness-95 transition-all">
-              <span className="material-symbols-outlined text-xs">confirmation_number</span>
-              <span>예매 티켓 보기</span>
-            </button>
+            {localTicketUrl ? (
+              <a
+                href={localTicketUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-surface-container-high rounded-2xl text-xs font-bold text-secondary flex items-center gap-2 px-2 py-0.5 hover:brightness-95 transition-all"
+              >
+                <span className="material-symbols-outlined text-xs">confirmation_number</span>
+                <span>예매 티켓 보기</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-surface-container-high rounded-2xl text-xs font-bold text-secondary flex items-center gap-2 px-2 py-0.5 hover:brightness-95 transition-all"
+              >
+                <span className="material-symbols-outlined text-xs">upload_file</span>
+                <span>파일 등록</span>
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={handleFileChange}
+            />
             {stop.externalLink && (
               <a
                 href={stop.externalLink}

@@ -1,13 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout';
-import { DaySelector, TimelineThread, StopCard, DaySidebar, ItinerarySkeleton } from '@/components/features/itinerary';
+import { DaySelector, TimelineThread, StopCard, DaySidebar, ItinerarySkeleton, PlanInfoBanner } from '@/components/features/itinerary';
 import { FABGroup, ResizeDivider, EmptyState } from '@/components/common';
 import { StatRow } from '@/components/ui';
 import { usePanelResize } from '@/hooks/usePanelResize';
 import { usePlanContext } from '@/contexts/PlanContext';
 import { adaptPlanToTripDays } from '@/utils/adapters';
-
 type ItineraryMobileTab = 'timeline' | 'sidebar';
 
 export default function ItineraryPage() {
@@ -121,6 +120,12 @@ export default function ItineraryPage() {
                   </h2>
                 </div>
 
+                {/* 날씨 / 이동시간 / 예산 배너 */}
+                <PlanInfoBanner
+                  weather={activePlan.extra_data?.weather}
+                  transport={activePlan.extra_data?.transport}
+                />
+
                 {/* Day Selector */}
                 <div className="overflow-x-auto no-scrollbar w-full pb-2">
                   <DaySelector
@@ -181,7 +186,17 @@ export default function ItineraryPage() {
                 <div
                   className={`${mobileTab === 'sidebar' ? 'w-full md:w-auto' : 'hidden md:block'} flex-1 min-w-0 space-y-8 lg:sticky lg:top-28`}
                 >
-                  <DaySidebar day={activeDay} dayIndex={activeDayIndex + 1} />
+                  <DaySidebar
+                    day={activeDay}
+                    dayIndex={activeDayIndex + 1}
+                    actualSpent={(() => {
+                      const rawDay = activePlan.days?.[activeDayIndex];
+                      if (!rawDay) return 0;
+                      return rawDay.items
+                        .filter(i => i.is_done && i.actual_amount)
+                        .reduce((sum, i) => sum + Number(i.actual_amount), 0);
+                    })()}
+                  />
 
                   {activePlan.total_budget && Number(activePlan.total_budget) > 0 && (
                     <div className="bg-white rounded-xl  border border-surface-container-high p-6 shadow-header">
