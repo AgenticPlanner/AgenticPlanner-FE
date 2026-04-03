@@ -3,6 +3,7 @@ import type { ItineraryStop } from '@/types/index';
 import { Badge, Chip, Card } from '@/components/ui';
 import { CategoryIcon } from '@/components/common';
 import { uploadTicket } from '@/api/plans';
+import { isValidNaverFlightUrl, getFlightUrl } from '@/utils/flightUrl';
 
 interface StopCardProps {
   stop: ItineraryStop;
@@ -51,6 +52,11 @@ export default function StopCard({ stop }: StopCardProps) {
 
   // Transit category - special dashed style
   if (stop.category === 'transit' || stop.category === 'transport') {
+    const transportUrl = stop.externalLink
+      ? getFlightUrl(stop.externalLink, '서울', '', '', '', 1)
+      : null;
+    const showLink = transportUrl && isValidNaverFlightUrl(transportUrl);
+
     return (
       <div className="relative pl-16 group">
         <div className="absolute left-0 top-0 z-10">
@@ -63,10 +69,20 @@ export default function StopCard({ stop }: StopCardProps) {
             </span>
             <h4 className="font-body font-bold text-lg text-on-surface">{stop.title}</h4>
             {stop.subtitle && <p className="text-on-surface-variant text-sm">{stop.subtitle}</p>}
+            {showLink && (
+              <a
+                href={transportUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-2 text-primary-dark text-xs font-bold underline underline-offset-4 hover:opacity-80 transition-opacity"
+              >
+                항공권 검색
+              </a>
+            )}
           </div>
           <span className="material-symbols-outlined text-primary-dark text-2xl">trending_flat</span>
         </div>
-      </div >
+      </div>
     );
   }
 
