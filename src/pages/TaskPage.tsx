@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Task } from '../types/index';
 import type { APIPlanItem } from '../types/api';
@@ -7,6 +7,7 @@ import { TaskCard, TaskSkeleton } from '../components/features/tasks';
 import { SectionHeader } from '../components/ui';
 import { ProgressBar, EmptySlot, EmptyState } from '../components/common';
 import { usePlanContext } from '../contexts/PlanContext';
+import { toggleItemDone, getPlanBudgetSummary, type BudgetSummary } from '../api/plans';
 
 // ── 카테고리 설정 ──────────────────────────────────────────────────
 const CATEGORY_CONFIG: Record<string, { bookingLabel: string; color: string }> = {
@@ -86,21 +87,6 @@ const getActionConfig = (
   };
 };
 
-// ── dev 검증 ──────────────────────────────────────────────────────
-if (process.env.NODE_ENV === 'development') {
-  const testCases = [
-    { category: 'TRANSPORT',     title: '서울→부산 KTX', tags: [], external_link: '', dest: '부산' },
-    { category: 'ACTIVITY',      title: '경복궁',        tags: ['무료'], external_link: '', dest: '서울' },
-    { category: 'ACCOMMODATION', title: '파리 호텔',     tags: [], external_link: '', dest: '파리' },
-    { category: 'ACTIVITY',      title: '에펠탑 견학',   tags: ['자유관광'], external_link: '', dest: '파리' },
-    { category: 'RESTAURANT',    title: '이치란 라멘',   tags: [], external_link: '', dest: '도쿄' },
-  ];
-  testCases.forEach(tc => {
-    const action = getActionConfig(tc as unknown as APIPlanItem, tc.dest);
-    console.log(`[${tc.category}] ${tc.title} → ${action.label} | ${action.url.slice(0, 60)}`);
-  });
-}
-
 // ── 헬퍼 함수 ─────────────────────────────────────────────────────
 const categoryToIcon = (category: APIPlanItem['category']): string => {
   switch (category) {
@@ -112,25 +98,22 @@ const categoryToIcon = (category: APIPlanItem['category']): string => {
   }
 };
 
-const statusToTaskStatus = (status: APIPlanItem['status']): Task['status'] => {
-  if (status === 'CONFIRMED') return 'done';
-  if (status === 'CANCELLED') return 'done';
-  return 'todo';
-};
-
 const itemToTask = (item: APIPlanItem, destination: string): Task => {
   const action = getActionConfig(item, destination);
+  const isDone = item.is_done ?? false;
   return {
     id: item.id,
     title: item.title,
     description: item.description || item.subtitle || item.location || '',
-    status: statusToTaskStatus(item.status),
+    status: isDone ? 'done' : (item.status === 'CONFIRMED' || item.status === 'CANCELLED' ? 'done' : 'todo'),
     icon: categoryToIcon(item.category),
     ctaLabel: action.label,
     ctaUrl: action.url,
     ctaColor: action.color,
     isReview: action.isReview,
     assignees: [],
+    isDone,
+    done_at: item.done_at,
   };
 };
 
@@ -138,25 +121,47 @@ export default function TaskPage() {
   const navigate = useNavigate();
   const { activePlan, loading, error, refetch } = usePlanContext();
 
-  const allItems = useMemo(() => {
-    if (!activePlan?.days) return [];
-    return [...activePlan.days]
+  const [localItems, setLocalItems] = useState<APIPlanItem[]>([]);
+  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
+
+  // activePlan이 바뀌면 localItems 초기화
+  useEffect(() => {
+    if (!activePlan?.days) return;
+    const items = [...activePlan.days]
       .sort((a, b) => a.day_number - b.day_number)
-      .flatMap(day =>
-        [...(day.items ?? [])].sort((a, b) => a.order_index - b.order_index)
-      );
+      .flatMap(day => [...(day.items ?? [])].sort((a, b) => a.order_index - b.order_index));
+    setLocalItems(items);
   }, [activePlan]);
 
+  const planId = activePlan?.id ?? '';
   const destination = activePlan?.title?.split(' ')[0] ?? '';
+
+  const refreshBudget = useCallback(() => {
+    if (!planId) return;
+    getPlanBudgetSummary(planId).then(setBudgetSummary).catch(() => {});
+  }, [planId]);
+
+  useEffect(() => { refreshBudget(); }, [refreshBudget]);
+
   const tasks: Task[] = useMemo(
-    () => allItems.map((item) => itemToTask(item, destination)),
-    [allItems, destination],
+    () => localItems.map(item => itemToTask(item, destination)),
+    [localItems, destination],
   );
 
-  const doneCount = tasks.filter((t) => t.status === 'done').length;
-  const progressPercentage = tasks.length > 0
-    ? Math.round((doneCount / tasks.length) * 100)
-    : 0;
+  const handleToggleDone = async (itemId: string) => {
+    try {
+      const updated = await toggleItemDone(itemId);
+      setLocalItems(prev => prev.map(it => it.id === itemId ? updated : it));
+      refreshBudget();
+    } catch {
+      alert('상태 변경에 실패했습니다.');
+    }
+  };
+
+  const doneCount = budgetSummary?.done_count ?? tasks.filter(t => t.status === 'done').length;
+  const totalCount = budgetSummary?.total_count ?? tasks.length;
+  const progressPercentage = budgetSummary?.completion_rate
+    ?? (totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0);
 
   return (
     <AppLayout topBarTitle="작업">
@@ -229,7 +234,12 @@ export default function TaskPage() {
         {!loading && !error && tasks.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {tasks.map((task, idx) => (
-              <TaskCard key={task.id} task={task} featured={idx === 0} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                featured={idx === 0}
+                onToggleDone={() => handleToggleDone(task.id)}
+              />
             ))}
             <EmptySlot label="마일스톤 추가" icon="add" />
           </div>

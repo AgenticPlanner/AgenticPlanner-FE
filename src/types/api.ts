@@ -37,6 +37,7 @@ export interface APIPlanItem {
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
   paid_at?: string;
   is_done?: boolean;
+  done_at?: string;
   actual_amount?: string;   // "120000.00"
   ticket_url?: string;
   is_active?: boolean;

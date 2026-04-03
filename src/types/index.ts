@@ -23,6 +23,8 @@ export interface Task {
   ctaUrl?: string;
   ctaColor?: string;
   isReview?: boolean;
+  isDone?: boolean;
+  done_at?: string;
 }
 
 export interface ItineraryStop {
