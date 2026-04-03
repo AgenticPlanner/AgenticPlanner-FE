@@ -37,6 +37,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string) => {
+    // 이전 사용자 세션 데이터 제거 (다른 계정 노출 방지)
+    sessionStorage.removeItem('agentSessionId');
+    sessionStorage.removeItem('agentMessages');
     await loginUser(username, password);
     const me = await getMe();
     setUser(me);
