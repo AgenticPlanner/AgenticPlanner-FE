@@ -1,4 +1,5 @@
 import type { TripDay } from '@/types/index';
+import type { APIPlanWeather, APIPlanTransport } from '@/types/api';
 import { StatRow } from '@/components/ui';
 import { GlassPanel } from '@/components/common';
 import { MapPin } from 'lucide-react';
@@ -7,9 +8,11 @@ interface DaySidebarProps {
   day: TripDay;
   dayIndex: number;
   actualSpent?: number;
+  weather?: APIPlanWeather;
+  transport?: APIPlanTransport;
 }
 
-export default function DaySidebar({ day, dayIndex, actualSpent }: DaySidebarProps) {
+export default function DaySidebar({ day, dayIndex, actualSpent, weather, transport }: DaySidebarProps) {
   return (
     <div className="space-y-8 font-body">
 
@@ -26,11 +29,16 @@ export default function DaySidebar({ day, dayIndex, actualSpent }: DaySidebarPro
           <GlassPanel className="absolute bottom-5 left-5 right-5 p-5 flex justify-between items-center">
             <div>
               <p className="text-[10px] font-bold text-slate-700 tracking-widest uppercase drop-shadow-sm">
-                예상 이동 시간
+                {transport ? `✈️ ${transport.origin} → ${transport.destination}` : '예상 이동 시간'}
               </p>
               <p className="font-bold text-base text-slate-900 mt-1 drop-shadow-sm">
-                {day.travelTime || '42 mins today'}
+                {transport
+                  ? `${Math.floor(transport.total_minutes / 60)}h${transport.total_minutes % 60 > 0 ? ` ${transport.total_minutes % 60}m` : ''}`
+                  : (day.travelTime || '-')}
               </p>
+              {transport?.duration_desc && (
+                <p className="text-xs text-slate-600 mt-0.5 drop-shadow-sm">{transport.duration_desc}</p>
+              )}
             </div>
             <MapPin className="text-primary-dark drop-shadow-sm text-2xl" />
           </GlassPanel>
@@ -44,7 +52,22 @@ export default function DaySidebar({ day, dayIndex, actualSpent }: DaySidebarPro
 
           <div className="space-y-4">
             <StatRow label="활동" value={day.stats.activities.toString()} />
-            <StatRow label="평균 기온" value={day.stats.temp} />
+            {weather ? (
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-sm text-on-surface-variant">평균 기온</span>
+                  <span className="font-semibold text-on-surface">{weather.avg_temp_c}°C</span>
+                </div>
+                <p className="text-xs text-on-surface-variant text-right">
+                  최저 {weather.min_temp_c}° / 최고 {weather.max_temp_c}°
+                </p>
+                <p className="bg-green-50 text-green-800 rounded-lg px-2.5 py-1.5 text-xs">
+                  👗 {weather.clothing_tip}
+                </p>
+              </div>
+            ) : (
+              <StatRow label="평균 기온" value={day.stats.temp} />
+            )}
             <StatRow
               label="소비 예산"
               value={day.stats.budgetSpent}

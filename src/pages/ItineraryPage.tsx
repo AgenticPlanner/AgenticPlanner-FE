@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout';
-import { DaySelector, TimelineThread, StopCard, DaySidebar, ItinerarySkeleton, PlanInfoBanner } from '@/components/features/itinerary';
+import { DaySelector, TimelineThread, StopCard, DaySidebar, ItinerarySkeleton } from '@/components/features/itinerary';
 import { FABGroup, ResizeDivider, EmptyState } from '@/components/common';
 import { StatRow } from '@/components/ui';
 import { usePanelResize } from '@/hooks/usePanelResize';
@@ -120,12 +120,6 @@ export default function ItineraryPage() {
                   </h2>
                 </div>
 
-                {/* 날씨 / 이동시간 / 예산 배너 */}
-                <PlanInfoBanner
-                  weather={activePlan.extra_data?.weather}
-                  transport={activePlan.extra_data?.transport}
-                />
-
                 {/* Day Selector */}
                 <div className="overflow-x-auto no-scrollbar w-full pb-2">
                   <DaySelector
@@ -189,6 +183,8 @@ export default function ItineraryPage() {
                   <DaySidebar
                     day={activeDay}
                     dayIndex={activeDayIndex + 1}
+                    weather={activePlan.extra_data?.weather}
+                    transport={activePlan.extra_data?.transport}
                     actualSpent={(() => {
                       const rawDay = activePlan.days?.[activeDayIndex];
                       if (!rawDay) return 0;
