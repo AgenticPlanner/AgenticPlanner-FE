@@ -183,6 +183,7 @@ export default function ItineraryPage() {
                   <DaySidebar
                     day={activeDay}
                     dayIndex={activeDayIndex + 1}
+                    dailyInfo={activePlan.days?.[activeDayIndex]?.daily_info}
                     weather={activePlan.extra_data?.weather}
                     transport={activePlan.extra_data?.transport}
                     actualSpent={(() => {
