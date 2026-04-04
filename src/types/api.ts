@@ -39,9 +39,34 @@ export interface APIPlanItem {
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
   paid_at?: string;
   is_done?: boolean;
+  done_at?: string;
   actual_amount?: string;   // "120000.00"
   ticket_url?: string;
   is_active?: boolean;
+}
+
+export interface APITransportSegment {
+  from: string;
+  to: string;
+  duration_minutes: number;
+  duration_desc: string;
+  transport_type: string;
+  source: string;
+}
+
+export interface APIDailyWeather {
+  avg_temp_c: number;
+  min_temp_c: number;
+  max_temp_c: number;
+  weather_desc: string;
+  clothing_tip: string;
+}
+
+export interface APIDailyInfo {
+  weather?: APIDailyWeather;
+  transport_segments: APITransportSegment[];
+  total_transport_minutes: number;
+  total_transport_desc: string;
 }
 
 export interface APIPlanDay {
@@ -50,6 +75,7 @@ export interface APIPlanDay {
   date: string;              // "YYYY-MM-DD"
   day_budget?: number;
   is_active?: boolean;
+  daily_info?: APIDailyInfo;
   items: APIPlanItem[];
 }
 

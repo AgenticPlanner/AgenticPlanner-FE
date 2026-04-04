@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { SessionSummary } from '@/types/api';
 import { getSessionList, deleteSession } from '@/api/agent';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ChatSidebarProps {
   currentSessionId: string | null;
@@ -22,12 +23,15 @@ function formatDate(dateStr: string): string {
 export default function ChatSidebar({ currentSessionId, onSelectSession, onNewChat }: ChatSidebarProps) {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const { user } = useAuth();
 
+  // 유저 변경(로그인/로그아웃) 시 세션 목록 재조회
   useEffect(() => {
-    getSessionList()
-      .then(setSessions)
-      .catch(() => setSessions([]));
-  }, []);
+    setSessions([]);
+    if (user?.id) {
+      getSessionList().then(setSessions).catch(() => setSessions([]));
+    }
+  }, [user?.id]);
 
   const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();

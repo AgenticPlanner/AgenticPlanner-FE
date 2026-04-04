@@ -1,4 +1,5 @@
 import type { TripDay } from '@/types/index';
+import type { APIPlanWeather, APIPlanTransport, APIDailyInfo } from '@/types/api';
 import { StatRow } from '@/components/ui';
 import { GlassPanel } from '@/components/common';
 import { MapPin } from 'lucide-react';
@@ -7,28 +8,53 @@ interface DaySidebarProps {
   day: TripDay;
   dayIndex: number;
   actualSpent?: number;
+  weather?: APIPlanWeather;
+  transport?: APIPlanTransport;
+  dailyInfo?: APIDailyInfo;
 }
 
-export default function DaySidebar({ day, dayIndex, actualSpent }: DaySidebarProps) {
+export default function DaySidebar({ day, dayIndex, actualSpent, weather, transport, dailyInfo }: DaySidebarProps) {
+  const effectiveWeather = dailyInfo?.weather ?? weather;
   return (
     <div className="space-y-8 font-body">
       <div className="bg-white rounded-[20px] shadow-header overflow-hidden border border-slate-100">
-        <div className="h-64 relative overflow-hidden bg-slate-100">
 
-          {/* 지도를 렌더링 후 stops(좌표 포함)를 넘겨줌 */}
-          <KakaoMap stops={day.stops || []} />
+        {/* 지도 이미지 배경 임시배치 */}
+        <div className="h-64 relative overflow-hidden">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=800&auto=format&fit=crop')" }}
+          />
 
-          {/* 오버레이 패널이 지도 가림 이슈로 주석 처리. */}
-          {/* <GlassPanel className="absolute bottom-5 left-5 right-5 p-5 flex justify-between items-center z-10">
-            <div>
+          {/* 지도 가림 이슈로 임시 주석 처리 */}
+          {/* <GlassPanel className="absolute bottom-5 left-5 right-5 p-5 flex justify-between items-center">
+            <div className="flex-1 min-w-0">
               <p className="text-[10px] font-bold text-slate-700 tracking-widest uppercase drop-shadow-sm">
-                예상 이동 시간
+                {transport ? `✈️ ${transport.origin} → ${transport.destination}` : '예상 이동 시간'}
               </p>
               <p className="font-bold text-base text-slate-900 mt-1 drop-shadow-sm">
-                {day.travelTime || '42 mins today'}
+                {dailyInfo?.total_transport_desc ||
+                  (transport
+                    ? `${Math.floor(transport.total_minutes / 60)}h${transport.total_minutes % 60 > 0 ? ` ${transport.total_minutes % 60}m` : ''}`
+                    : (day.travelTime || '-'))}
               </p>
+              {dailyInfo?.transport_segments && dailyInfo.transport_segments.length > 0 && (
+                <div className="mt-1.5 space-y-0.5">
+                  {dailyInfo.transport_segments.map((seg, i) => (
+                    <div key={i} className="flex justify-between text-[11px] text-slate-600 drop-shadow-sm">
+                      <span className="truncate max-w-[65%]">
+                        {seg.from.slice(0, 8)} → {seg.to.slice(0, 8)}
+                      </span>
+                      <span className="font-medium text-slate-800 shrink-0 ml-1">{seg.duration_desc}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!dailyInfo && transport?.duration_desc && (
+                <p className="text-xs text-slate-600 mt-0.5 drop-shadow-sm">{transport.duration_desc}</p>
+              )}
             </div>
-            <MapPin className="text-primary-dark drop-shadow-sm text-2xl" />
+            <MapPin className="text-primary-dark drop-shadow-sm text-2xl shrink-0 ml-3" />
           </GlassPanel> */}
         </div>
 
@@ -40,7 +66,22 @@ export default function DaySidebar({ day, dayIndex, actualSpent }: DaySidebarPro
 
           <div className="space-y-4">
             <StatRow label="활동" value={day.stats.activities.toString()} />
-            <StatRow label="평균 기온" value={day.stats.temp} />
+            {effectiveWeather ? (
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-sm text-on-surface-variant">평균 기온</span>
+                  <span className="font-semibold text-on-surface">{effectiveWeather.avg_temp_c}°C</span>
+                </div>
+                <p className="text-xs text-on-surface-variant text-right">
+                  최저 {effectiveWeather.min_temp_c}° / 최고 {effectiveWeather.max_temp_c}°
+                </p>
+                <p className="bg-green-50 text-green-800 rounded-lg px-2.5 py-1.5 text-xs">
+                  👗 {effectiveWeather.clothing_tip}
+                </p>
+              </div>
+            ) : (
+              <StatRow label="평균 기온" value={day.stats.temp} />
+            )}
             <StatRow
               label="소비 예산"
               value={day.stats.budgetSpent}

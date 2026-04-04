@@ -53,6 +53,8 @@ export default function ChatPage() {
   const autoStart = searchParams.get('autoStart') === 'true';
 
   const [session, setSession] = useState<AgentSession | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -65,27 +67,32 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const autoStartFired = useRef(false);
 
-  // ── 세션 로드 / 없으면 빈 세션 자동 생성 ──────────────────────────────────
+  // ── sessionId 없을 때만 redirect ────────────────────────────────────────────
   useEffect(() => {
+    if (sessionId) return;
+    getSessionList()
+      .then((sessions) => {
+        if (sessions.length > 0) {
+          navigate(`/chat?sessionId=${sessions[0].id}`, { replace: true });
+        } else {
+          navigate('/plan', { replace: true });
+        }
+      })
+      .catch(() => navigate('/plan', { replace: true }));
+  }, [sessionId, navigate]);
+
+  // ── 세션 로드 — 실패해도 redirect 안 함 ────────────────────────────────────
+  useEffect(() => {
+    if (!sessionId) return;
     setMessages([]);
     setThinkingSteps([]);
     setCrawlingStatus(null);
     setPlanId(null);
     setError(null);
     autoStartFired.current = false;
+    setLoading(true);
+    setLoadError(null);
 
-    if (!sessionId) {
-      getSessionList()
-        .then((sessions) => {
-          if (sessions.length > 0) {
-            navigate(`/chat?sessionId=${sessions[0].id}`, { replace: true });
-          } else {
-            navigate('/plan', { replace: true });
-          }
-        })
-        .catch(() => navigate('/plan', { replace: true }));
-      return;
-    }
     getAgentSession(sessionId)
       .then((s) => {
         setSession(s);
@@ -98,8 +105,16 @@ export default function ChatPage() {
           })));
         }
       })
-      .catch(() => navigate('/plan'));
-  }, [sessionId, navigate]);
+      .catch((err) => {
+        const status = err?.response?.status;
+        if (status === 404) {
+          setLoadError('세션을 찾을 수 없습니다.');
+        } else {
+          setLoadError('세션을 불러오지 못했습니다. 다시 시도해주세요.');
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [sessionId]);
 
   // ── autoStart: travel_info를 첫 메시지로 자동 전송 ──────────────────────
   // session이 로드되고, autoStart=true이며, destination이 있을 때 1회만 실행
@@ -239,13 +254,43 @@ export default function ChatPage() {
   }, [sessionId, isStreaming, handleSend]);
 
   // ── 로딩 화면 ────────────────────────────────────────────────────────────────
-  if (!session) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <p className="font-body text-on-surface-variant">세션 로딩 중...</p>
+      <div style={{
+        display: 'flex', justifyContent: 'center',
+        alignItems: 'center', height: '100vh',
+        flexDirection: 'column', gap: '12px',
+      }}>
+        <div style={{
+          width: '32px', height: '32px',
+          border: '3px solid #e5e7eb',
+          borderTop: '3px solid #3b82f6',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <p style={{ color: '#6b7280', fontSize: '14px' }}>대화를 불러오는 중...</p>
+        <style>{'@keyframes spin { to { transform: rotate(360deg) } }'}</style>
       </div>
     );
   }
+
+  // ── 에러 화면 ────────────────────────────────────────────────────────────────
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background flex-col gap-4">
+        <p className="font-body text-on-surface-variant">{loadError}</p>
+        <button
+          type="button"
+          onClick={() => navigate('/plan')}
+          className="bg-primary text-on-primary px-5 py-2 rounded-full text-sm font-semibold font-body"
+        >
+          돌아가기
+        </button>
+      </div>
+    );
+  }
+
+  if (!session) return null;
 
   const destination = session.travel_info?.destination || '채팅';
 

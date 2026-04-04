@@ -21,6 +21,10 @@ export interface Task {
   assignees?: string[]; // avatar URLs
   ctaLabel: string;
   ctaUrl?: string;
+  ctaColor?: string;
+  isReview?: boolean;
+  isDone?: boolean;
+  done_at?: string;
 }
 
 export interface ItineraryStop {
