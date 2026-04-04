@@ -12,7 +12,7 @@ interface DaySidebarProps {
 }
 
 export default function DaySidebar({ day, dayIndex, actualSpent, weather, transport: _transport, dailyInfo }: DaySidebarProps) {
-  const effectiveWeather = dailyInfo?.weather ?? weather;
+  const effectiveWeather = (dailyInfo?.weather?.avg_temp_c != null ? dailyInfo.weather : undefined) ?? weather;
   return (
     <div className="space-y-8 font-body">
       <div className="bg-white rounded-[20px] shadow-header overflow-hidden border border-slate-100">
