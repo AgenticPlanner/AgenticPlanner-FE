@@ -21,10 +21,7 @@ export default function DaySidebar({ day, dayIndex, actualSpent, weather, transp
 
         {/* 지도 이미지 배경 임시배치 */}
         <div className="h-64 relative overflow-hidden">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=800&auto=format&fit=crop')" }}
-          />
+          <KakaoMap stops={day.stops || []} />
 
           {/* 지도 가림 이슈로 임시 주석 처리 */}
           {/* <GlassPanel className="absolute bottom-5 left-5 right-5 p-5 flex justify-between items-center">
