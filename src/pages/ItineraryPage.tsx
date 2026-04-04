@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout';
-import { DaySelector, TimelineThread, StopCard, DaySidebar, ItinerarySkeleton } from '@/components/features/itinerary';
+import { DaySelector, TimelineThread, StopCard, TipCard, DaySidebar, ItinerarySkeleton } from '@/components/features/itinerary';
 import { FABGroup, ResizeDivider, EmptyState } from '@/components/common';
 import { StatRow } from '@/components/ui';
 import { usePanelResize } from '@/hooks/usePanelResize';
@@ -159,7 +159,9 @@ export default function ItineraryPage() {
                   <div className="space-y-12 relative" key={activeDayIndex}>
                     <TimelineThread />
                     {currentStops.map((stop) => (
-                      <StopCard key={stop.id} stop={stop} />
+                      stop.category === 'tip'
+                        ? <TipCard key={stop.id} stop={stop} />
+                        : <StopCard key={stop.id} stop={stop} />
                     ))}
                     {currentStops.length === 0 && (
                       <p className="text-on-surface-variant text-sm py-16 text-center pl-0">

@@ -19,13 +19,26 @@ export interface APIPlanMember {
   created_at: string;
 }
 
+export const TIP_TYPES = {
+  ESIM:           'ESIM',
+  TRANSPORT_CARD: 'TRANSPORT_CARD',
+  BIKE:           'BIKE',
+  APP:            'APP',
+  SOUVENIR:       'SOUVENIR',
+  FOOD_LOCAL:     'FOOD_LOCAL',
+  CURRENCY:       'CURRENCY',
+  SAFETY:         'SAFETY',
+  WEATHER_TIP:    'WEATHER_TIP',
+  GENERAL:        'GENERAL',
+} as const
+
 export interface APIPlanItem {
   id: string;
   order_index: number;
   title: string;
   subtitle?: string;
   description?: string;
-  category: 'TRANSPORT' | 'ACCOMMODATION' | 'ACTIVITY' | 'RESTAURANT' | 'OTHER';
+  category: 'TRANSPORT' | 'ACCOMMODATION' | 'ACTIVITY' | 'RESTAURANT' | 'OTHER' | 'TIP';
   amount?: string;           // "320000.00"
   badge?: string;
   tags?: string[];
@@ -43,6 +56,8 @@ export interface APIPlanItem {
   actual_amount?: string;   // "120000.00"
   ticket_url?: string;
   is_active?: boolean;
+  tip_type?: string | null;
+  tip_metadata?: Record<string, unknown>;
 }
 
 export interface APITransportSegment {

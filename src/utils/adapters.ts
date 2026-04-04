@@ -7,6 +7,7 @@ const CATEGORY_MAP: Record<string, ItineraryStop['category']> = {
   ACTIVITY: 'sightseeing',
   RESTAURANT: 'dining',
   OTHER: 'sightseeing',
+  TIP: 'tip',
   // 소문자 방어 (데이터 불일치 대비)
   transport: 'transit',
   accommodation: 'stay',
@@ -14,6 +15,7 @@ const CATEGORY_MAP: Record<string, ItineraryStop['category']> = {
   restaurant: 'dining',
   food: 'dining',
   other: 'sightseeing',
+  tip: 'tip',
 };
 
 const formatDate = (dateStr: string) => {
@@ -39,6 +41,8 @@ export const adaptItemToStop = (item: APIPlanItem): ItineraryStop => ({
   externalLink: item.external_link,
   ticketUrl: item.ticket_url,
   status: item.status,
+  tip_type: item.tip_type,
+  tip_metadata: item.tip_metadata,
 });
 
 export const adaptDayToTripDay = (day: APIPlanDay): TripDay => ({
