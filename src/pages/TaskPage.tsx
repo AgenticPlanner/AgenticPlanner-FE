@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Task } from '../types/index';
 import type { APIPlanItem } from '../types/api';
@@ -7,18 +7,87 @@ import { TaskCard, TaskSkeleton } from '../components/features/tasks';
 import { SectionHeader } from '../components/ui';
 import { ProgressBar, EmptySlot, EmptyState } from '../components/common';
 import { usePlanContext } from '../contexts/PlanContext';
+import { toggleItemDone, getPlanBudgetSummary, type BudgetSummary } from '../api/plans';
 
-const getFallbackUrl = (item: APIPlanItem, destination: string): string => {
+// ── 카테고리 설정 ──────────────────────────────────────────────────
+const CATEGORY_CONFIG: Record<string, { bookingLabel: string; color: string }> = {
+  TRANSPORT:     { bookingLabel: '항공권 예약',  color: '#1a73e8' },
+  ACCOMMODATION: { bookingLabel: '숙소 예약',    color: '#6c5ce7' },
+  ACTIVITY:      { bookingLabel: '액티비티 예약', color: '#f39c12' },
+  RESTAURANT:    { bookingLabel: '식당 검색',    color: '#e17055' },
+  OTHER:         { bookingLabel: '검색하기',     color: '#636e72' },
+};
+
+// ── 국내 여행지 판단 ───────────────────────────────────────────────
+const isKoreanDestination = (destination: string): boolean => {
+  const koreanCities = [
+    '서울', '부산', '제주', '인천', '대구', '대전', '광주',
+    '수원', '강릉', '경주', '전주', '춘천', '속초', '여수',
+  ];
+  return koreanCities.some(city => destination.includes(city))
+    || /[가-힣]/.test(destination);
+};
+
+// ── 리뷰 검색 URL ─────────────────────────────────────────────────
+const getReviewUrl = (
+  item: APIPlanItem,
+  destination: string,
+  platform: 'naver' | 'youtube' = 'naver',
+): string => {
+  const query = `${destination} ${item.title} 여행 리뷰`;
+  const q = encodeURIComponent(query);
+  if (platform === 'youtube') return `https://www.youtube.com/results?search_query=${q}`;
+  return `https://search.naver.com/search.naver?query=${q}&where=blog`;
+};
+
+// ── 예약 필요 여부 ─────────────────────────────────────────────────
+const needsBooking = (item: APIPlanItem): boolean => {
+  if (item.category === 'TRANSPORT') return true;
+  if (item.category === 'ACCOMMODATION') return true;
+  if (item.tags?.includes('예약필요')) return true;
+  if (item.external_link) return true;
+  return false;
+};
+
+// ── 예약 폴백 URL (booking 전용) ──────────────────────────────────
+const getFallbackBookingUrl = (item: APIPlanItem, destination: string): string => {
   const q = encodeURIComponent(`${destination} ${item.title}`);
+  const loc = encodeURIComponent(item.location || destination);
   switch (item.category) {
-    case 'ACCOMMODATION': return `https://hotels.naver.com/searchpage/hotel?query=${q}`;
+    case 'TRANSPORT':     return `https://flight.naver.com/flights?query=${q}`;
+    case 'ACCOMMODATION': return `https://hotels.naver.com/searchpage/hotel?query=${loc}`;
     case 'RESTAURANT':    return `https://map.naver.com/v5/search/${q}`;
     case 'ACTIVITY':      return `https://www.klook.com/ko/search/?query=${q}`;
-    case 'TRANSPORT':     return `https://flight.naver.com/flights/international?query=${q}`;
-    default:              return `https://search.naver.com/search.naver?query=${q}`;
+    default:              return `https://www.google.com/search?q=${q}`;
   }
 };
 
+// ── 액션 URL · 레이블 · 색상 결정 ────────────────────────────────
+const getActionConfig = (
+  item: APIPlanItem,
+  destination: string,
+): { url: string; label: string; color: string; isReview: boolean } => {
+  const cfg = CATEGORY_CONFIG[item.category] ?? CATEGORY_CONFIG['OTHER'];
+
+  if (needsBooking(item)) {
+    return {
+      url: item.external_link || getFallbackBookingUrl(item, destination),
+      label: cfg.bookingLabel,
+      color: cfg.color,
+      isReview: false,
+    };
+  }
+
+  const dom = isKoreanDestination(destination);
+  return {
+    url: getReviewUrl(item, destination, dom ? 'naver' : 'youtube'),
+    label: dom ? '네이버 리뷰' : '유튜브 리뷰',
+    color: dom ? '#03c75a' : '#ff0000',
+    isReview: true,
+  };
+};
+
+// ── 헬퍼 함수 ─────────────────────────────────────────────────────
 const categoryToIcon = (category: APIPlanItem['category']): string => {
   switch (category) {
     case 'RESTAURANT':    return 'restaurant';
@@ -29,23 +98,22 @@ const categoryToIcon = (category: APIPlanItem['category']): string => {
   }
 };
 
-const statusToTaskStatus = (status: APIPlanItem['status']): Task['status'] => {
-  if (status === 'CONFIRMED') return 'done';
-  if (status === 'CANCELLED') return 'done';
-  return 'todo';
-};
-
 const itemToTask = (item: APIPlanItem, destination: string): Task => {
-  const ctaUrl = item.external_link || getFallbackUrl(item, destination);
+  const action = getActionConfig(item, destination);
+  const isDone = item.is_done ?? false;
   return {
     id: item.id,
     title: item.title,
     description: item.description || item.subtitle || item.location || '',
-    status: statusToTaskStatus(item.status),
+    status: isDone ? 'done' : (item.status === 'CONFIRMED' || item.status === 'CANCELLED' ? 'done' : 'todo'),
     icon: categoryToIcon(item.category),
-    ctaLabel: item.external_link ? '예약하기' : '검색하기',
-    ctaUrl,
+    ctaLabel: action.label,
+    ctaUrl: action.url,
+    ctaColor: action.color,
+    isReview: action.isReview,
     assignees: [],
+    isDone,
+    done_at: item.done_at,
   };
 };
 
@@ -53,25 +121,47 @@ export default function TaskPage() {
   const navigate = useNavigate();
   const { activePlan, loading, error, refetch } = usePlanContext();
 
-  const allItems = useMemo(() => {
-    if (!activePlan?.days) return [];
-    return [...activePlan.days]
+  const [localItems, setLocalItems] = useState<APIPlanItem[]>([]);
+  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
+
+  // activePlan이 바뀌면 localItems 초기화
+  useEffect(() => {
+    if (!activePlan?.days) return;
+    const items = [...activePlan.days]
       .sort((a, b) => a.day_number - b.day_number)
-      .flatMap(day =>
-        [...(day.items ?? [])].sort((a, b) => a.order_index - b.order_index)
-      );
+      .flatMap(day => [...(day.items ?? [])].sort((a, b) => a.order_index - b.order_index));
+    setLocalItems(items);
   }, [activePlan]);
 
+  const planId = activePlan?.id ?? '';
   const destination = activePlan?.title?.split(' ')[0] ?? '';
+
+  const refreshBudget = useCallback(() => {
+    if (!planId) return;
+    getPlanBudgetSummary(planId).then(setBudgetSummary).catch(() => {});
+  }, [planId]);
+
+  useEffect(() => { refreshBudget(); }, [refreshBudget]);
+
   const tasks: Task[] = useMemo(
-    () => allItems.map((item) => itemToTask(item, destination)),
-    [allItems, destination],
+    () => localItems.map(item => itemToTask(item, destination)),
+    [localItems, destination],
   );
 
-  const doneCount = tasks.filter((t) => t.status === 'done').length;
-  const progressPercentage = tasks.length > 0
-    ? Math.round((doneCount / tasks.length) * 100)
-    : 0;
+  const handleToggleDone = async (itemId: string) => {
+    try {
+      const updated = await toggleItemDone(itemId);
+      setLocalItems(prev => prev.map(it => it.id === itemId ? updated : it));
+      refreshBudget();
+    } catch {
+      alert('상태 변경에 실패했습니다.');
+    }
+  };
+
+  const doneCount = budgetSummary?.done_count ?? tasks.filter(t => t.status === 'done').length;
+  const totalCount = budgetSummary?.total_count ?? tasks.length;
+  const progressPercentage = budgetSummary?.completion_rate
+    ?? (totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0);
 
   return (
     <AppLayout topBarTitle="작업">
@@ -144,7 +234,12 @@ export default function TaskPage() {
         {!loading && !error && tasks.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {tasks.map((task, idx) => (
-              <TaskCard key={task.id} task={task} featured={idx === 0} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                featured={idx === 0}
+                onToggleDone={() => handleToggleDone(task.id)}
+              />
             ))}
             <EmptySlot label="마일스톤 추가" icon="add" />
           </div>
