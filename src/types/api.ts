@@ -34,6 +34,8 @@ export interface APIPlanItem {
   start_time?: string;       // "HH:MM"
   end_time?: string;
   location?: string;
+  lat: number;
+  lng: number;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
   paid_at?: string;
   is_done?: boolean;

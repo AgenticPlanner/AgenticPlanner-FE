@@ -36,6 +36,8 @@ export interface ItineraryStop {
   subtitle?: string;
   description?: string;
   location?: string;
+  lat: number;
+  lng: number;
   imageUrl?: string;
   badge?: string;
   tags?: string[];

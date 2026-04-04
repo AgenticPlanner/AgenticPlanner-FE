@@ -2,18 +2,18 @@ import type { APIPlanDay, APIPlanItem, APIPlan } from '@/types/api';
 import type { TripDay, ItineraryStop } from '@/types';
 
 const CATEGORY_MAP: Record<string, ItineraryStop['category']> = {
-  TRANSPORT:     'transit',
+  TRANSPORT: 'transit',
   ACCOMMODATION: 'stay',
-  ACTIVITY:      'sightseeing',
-  RESTAURANT:    'dining',
-  OTHER:         'sightseeing',
+  ACTIVITY: 'sightseeing',
+  RESTAURANT: 'dining',
+  OTHER: 'sightseeing',
   // 소문자 방어 (데이터 불일치 대비)
-  transport:     'transit',
+  transport: 'transit',
   accommodation: 'stay',
-  activity:      'sightseeing',
-  restaurant:    'dining',
-  food:          'dining',
-  other:         'sightseeing',
+  activity: 'sightseeing',
+  restaurant: 'dining',
+  food: 'dining',
+  other: 'sightseeing',
 };
 
 const formatDate = (dateStr: string) => {
@@ -30,6 +30,8 @@ export const adaptItemToStop = (item: APIPlanItem): ItineraryStop => ({
   subtitle: item.subtitle,
   description: item.description,
   location: item.location,
+  lat: item.lat,
+  lng: item.lng,
   imageUrl: item.img_url,
   badge: item.badge,
   tags: item.tags ?? [],
