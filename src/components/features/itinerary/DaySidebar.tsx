@@ -2,7 +2,7 @@ import type { TripDay } from '@/types/index';
 import { StatRow } from '@/components/ui';
 import { GlassPanel } from '@/components/common';
 import { MapPin } from 'lucide-react';
-
+import KakaoMap from '@/components/common/KakaoMap';
 interface DaySidebarProps {
   day: TripDay;
   dayIndex: number;
@@ -12,18 +12,14 @@ interface DaySidebarProps {
 export default function DaySidebar({ day, dayIndex, actualSpent }: DaySidebarProps) {
   return (
     <div className="space-y-8 font-body">
-
-      {/* Map Panel */}
       <div className="bg-white rounded-[20px] shadow-header overflow-hidden border border-slate-100">
+        <div className="h-64 relative overflow-hidden bg-slate-100">
 
-        {/* 지도 이미지 배경 임시배치 */}
-        <div className="h-64 relative overflow-hidden">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=800&auto=format&fit=crop')" }}
-          />
+          {/* 지도를 렌더링 후 stops(좌표 포함)를 넘겨줌 */}
+          <KakaoMap stops={day.stops || []} />
 
-          <GlassPanel className="absolute bottom-5 left-5 right-5 p-5 flex justify-between items-center">
+          {/* 오버레이 패널이 지도 가림 이슈로 주석 처리. */}
+          {/* <GlassPanel className="absolute bottom-5 left-5 right-5 p-5 flex justify-between items-center z-10">
             <div>
               <p className="text-[10px] font-bold text-slate-700 tracking-widest uppercase drop-shadow-sm">
                 예상 이동 시간
@@ -33,7 +29,7 @@ export default function DaySidebar({ day, dayIndex, actualSpent }: DaySidebarPro
               </p>
             </div>
             <MapPin className="text-primary-dark drop-shadow-sm text-2xl" />
-          </GlassPanel>
+          </GlassPanel> */}
         </div>
 
         {/* Stats section */}
