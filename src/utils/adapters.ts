@@ -40,6 +40,7 @@ export const adaptItemToStop = (item: APIPlanItem): ItineraryStop => ({
   amount: item.amount,
   externalLink: item.external_link,
   ticketUrl: item.ticket_url,
+  transportParams: item.transport_params,
   status: item.status,
   tip_type: item.tip_type,
   tip_metadata: item.tip_metadata,

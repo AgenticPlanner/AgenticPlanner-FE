@@ -58,6 +58,7 @@ export interface APIPlanItem {
   is_active?: boolean;
   tip_type?: string | null;
   tip_metadata?: Record<string, unknown>;
+  transport_params?: Record<string, unknown>;
 }
 
 export interface APITransportSegment {

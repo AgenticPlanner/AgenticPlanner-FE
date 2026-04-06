@@ -67,6 +67,68 @@ export const getFlightUrl = (
   return `https://flight.naver.com/flights/international/${path}?adult=${adults}&isDirect=false&fareType=Y`
 }
 
+/**
+ * transport_params dict → 교통편 예약 URL 생성 (클라이언트 사이드 fallback).
+ * BE build_transport_url_from_params의 FE 미러 구현.
+ */
+export const buildTransportUrlClient = (
+  params: Record<string, unknown>,
+  destination: string,
+): string => {
+  const type = String(params.type ?? 'flight').toLowerCase()
+  const origin = String(params.origin_city ?? '')
+  const dest = String(params.destination_city ?? destination)
+  const oIata = String(params.origin_iata ?? getIataClient(origin))
+  const dIata = String(params.destination_iata ?? getIataClient(dest))
+  const depDate = String(params.depart_date ?? '').replace(/-/g, '')
+  const retDate = String(params.return_date ?? '').replace(/-/g, '')
+  const adults = Math.max(1, Number(params.adults ?? 1))
+
+  if (type === 'ktx') {
+    return (
+      `https://www.korail.com/ticket/search/general` +
+      `?selGoDay=${depDate}&txtGoStart=${encodeURIComponent(origin)}` +
+      `&txtGoEnd=${encodeURIComponent(dest)}&radJobId=1`
+    )
+  }
+  if (type === 'srt') {
+    return (
+      `https://etk.srail.kr/main.do` +
+      `?startStation=${encodeURIComponent(origin)}` +
+      `&endStation=${encodeURIComponent(dest)}&dptDt=${depDate}`
+    )
+  }
+  if (type === 'bus') {
+    return (
+      `https://www.kobus.co.kr/main.do?method=expSearch` +
+      `&startCityId=${encodeURIComponent(origin)}&endCityId=${encodeURIComponent(dest)}`
+    )
+  }
+  if (type === 'ferry') {
+    const q = encodeURIComponent(`${dest} ferry`)
+    return `https://www.kkday.com/ko/category/transport/list?query=${q}`
+  }
+  if (type === 'drive') {
+    return `https://map.naver.com/v5/directions/${encodeURIComponent(origin)}/${encodeURIComponent(dest)}/-/car`
+  }
+  if (type === 'domestic_flight') {
+    if (oIata && dIata && depDate) {
+      return `https://flight.naver.com/flights/domestic/${oIata}-${dIata}-${depDate}?adult=${adults}`
+    }
+    return `https://flight.naver.com/flights/domestic?departure=${encodeURIComponent(origin)}&arrival=${encodeURIComponent(dest)}&adult=${adults}`
+  }
+
+  // 국제선 항공 (기본값)
+  if (!oIata || !dIata || !depDate) {
+    const q = encodeURIComponent(`${origin || dest} 항공권`)
+    return `https://flight.naver.com/flights/international?query=${q}&adult=${adults}&fareType=Y`
+  }
+  const path = retDate
+    ? `${oIata}:city-${dIata}:city-${depDate}/${dIata}:city-${oIata}:city-${retDate}`
+    : `${oIata}:city-${dIata}:city-${depDate}`
+  return `https://flight.naver.com/flights/international/${path}?adult=${adults}&isDirect=false&fareType=Y`
+}
+
 // FE용 간이 IATA 변환 (자주 쓰는 도시만)
 const IATA_MAP_CLIENT: Record<string, string> = {
   '서울': 'SEL', '인천': 'ICN', '김포': 'GMP',

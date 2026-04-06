@@ -2,8 +2,8 @@ import { useState, useRef } from 'react';
 import type { ItineraryStop } from '@/types/index';
 import { Badge, Chip, Card } from '@/components/ui';
 import { CategoryIcon } from '@/components/common';
-import { uploadTicket } from '@/api/plans';
-import { isValidNaverFlightUrl, getFlightUrl } from '@/utils/flightUrl';
+import { uploadTicket, getDirections } from '@/api/plans';
+import { isValidNaverFlightUrl, getFlightUrl, buildTransportUrlClient } from '@/utils/flightUrl';
 
 interface StopCardProps {
   stop: ItineraryStop;
@@ -35,6 +35,8 @@ const formatAmount = (amount: string) => {
 export default function StopCard({ stop }: StopCardProps) {
   const [localTicketUrl, setLocalTicketUrl] = useState(stop.ticketUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showOriginInput, setShowOriginInput] = useState(false);
+  const [originInput, setOriginInput] = useState('');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,15 +49,49 @@ export default function StopCard({ stop }: StopCardProps) {
     }
   };
 
+  const handleDirections = async () => {
+    const dest = stop.location || stop.title;
+    if (stop.externalLink?.includes('map.naver.com/p/directions/')) {
+      window.open(stop.externalLink, '_blank');
+      return;
+    }
+    setShowOriginInput(true);
+  };
+
+  const handleOriginSubmit = async () => {
+    if (!originInput.trim()) return;
+    const dest = stop.location || stop.title;
+    try {
+      const data = await getDirections(dest, originInput, 'transit');
+      if (data.url) {
+        window.open(data.url, '_blank');
+        setShowOriginInput(false);
+        setOriginInput('');
+      }
+    } catch {
+      const q = encodeURIComponent(`${originInput}에서 ${dest}`);
+      window.open(`https://map.naver.com/p/search/${q}`, '_blank');
+      setShowOriginInput(false);
+      setOriginInput('');
+    }
+  };
+
   const timeLabel = formatTime(stop.time, stop.endTime);
   const badgeLabel = stop.status === 'CONFIRMED' ? 'Confirmed' : stop.badge;
 
   // Transit category - special dashed style
   if (stop.category === 'transit' || stop.category === 'transport') {
-    const transportUrl = stop.externalLink
-      ? getFlightUrl(stop.externalLink, '서울', '', '', '', 1)
-      : null;
-    const showLink = transportUrl && isValidNaverFlightUrl(transportUrl);
+    // 1. BE 저장 URL이 유효한 딥링크면 그대로 사용
+    // 2. BE URL이 없으면 transport_params로 클라이언트 사이드 URL 생성 (fallback)
+    let transportUrl: string | null = null;
+    if (stop.externalLink && isValidNaverFlightUrl(stop.externalLink)) {
+      transportUrl = stop.externalLink;
+    } else if (stop.externalLink && stop.externalLink.startsWith('http')) {
+      transportUrl = stop.externalLink;
+    } else if (stop.transportParams && Object.keys(stop.transportParams).length > 0) {
+      transportUrl = buildTransportUrlClient(stop.transportParams, '');
+    }
+    const showLink = !!transportUrl;
 
     return (
       <div className="relative pl-16 group">
@@ -69,15 +105,62 @@ export default function StopCard({ stop }: StopCardProps) {
             </span>
             <h4 className="font-body font-bold text-lg text-on-surface">{stop.title}</h4>
             {stop.subtitle && <p className="text-on-surface-variant text-sm">{stop.subtitle}</p>}
-            {showLink && (
-              <a
-                href={transportUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block mt-2 text-primary-dark text-xs font-bold underline underline-offset-4 hover:opacity-80 transition-opacity"
+            {(() => {
+              const t = String(stop.transportParams?.type ?? 'flight').toLowerCase();
+              const isDriveOrTransit = t === 'drive' || t === 'transit';
+              if (isDriveOrTransit) {
+                return (
+                  <button
+                    type="button"
+                    onClick={handleDirections}
+                    className="inline-block mt-2 text-primary-dark text-xs font-bold underline underline-offset-4 hover:opacity-80 transition-opacity"
+                  >
+                    길찾기 →
+                  </button>
+                );
+              }
+              if (showLink && transportUrl) {
+                return (
+                  <a
+                    href={transportUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-2 text-primary-dark text-xs font-bold underline underline-offset-4 hover:opacity-80 transition-opacity"
+                  >
+                    {t === 'ktx' || t === 'srt' ? 'KTX/SRT 예매' :
+                     t === 'bus' ? '버스 예매' :
+                     t === 'ferry' ? '배편 검색' :
+                     t === 'domestic_flight' ? '국내선 검색' : '항공권 검색'}
+                  </a>
+                );
+              }
+              return null;
+            })()}
+            {showOriginInput && (
+              <div
+                style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+                onClick={() => setShowOriginInput(false)}
               >
-                항공권 검색
-              </a>
+                <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: '16px', padding: '24px', width: '320px' }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: 600 }}>길찾기</h3>
+                  <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#6b7280' }}>
+                    {stop.location || stop.title}(으)로 가는 길을 찾을게요.
+                  </p>
+                  <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#374151', fontWeight: 500 }}>출발지를 입력해주세요</p>
+                  <input
+                    value={originInput}
+                    onChange={e => setOriginInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleOriginSubmit()}
+                    placeholder="예: 강남역, 숙소 주소, 홍대입구역"
+                    autoFocus
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', marginBottom: '12px' }}
+                  />
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => setShowOriginInput(false)} style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer' }}>취소</button>
+                    <button onClick={handleOriginSubmit} style={{ flex: 1, padding: '10px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>길찾기 →</button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
           <span className="material-symbols-outlined text-primary-dark text-2xl">trending_flat</span>

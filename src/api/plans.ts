@@ -83,3 +83,24 @@ export const uploadTicket = async (itemId: string, file: File): Promise<APIPlanI
 export const deleteTicket = async (itemId: string): Promise<void> => {
   await apiClient.delete(`/api/v1/plans/items/${itemId}/upload-ticket/`);
 };
+
+export interface DirectionsResult {
+  url: string;
+  needs_origin: boolean;
+  message: string;
+  source?: string;
+  is_precise?: boolean;
+}
+
+export const getDirections = async (
+  destination: string,
+  origin: string,
+  mode: string = 'transit',
+): Promise<DirectionsResult> => {
+  const res = await apiClient.post<DirectionsResult>('/api/v1/plans/directions/', {
+    destination,
+    origin,
+    mode,
+  });
+  return res.data;
+};
