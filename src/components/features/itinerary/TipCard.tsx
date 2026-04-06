@@ -103,7 +103,7 @@ export default function TipCard({ stop }: TipCardProps) {
                     <div>
                       <span style={{ fontWeight: 600, fontSize: '13px' }}>
                         {String(app.name)}
-                        {app.is_essential && (
+                        {!!app.is_essential && (
                           <span style={{ marginLeft: '4px', fontSize: '10px', color: '#ef4444' }}>★필수</span>
                         )}
                       </span>
@@ -112,11 +112,11 @@ export default function TipCard({ stop }: TipCardProps) {
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: '4px' }}>
-                      {app.ios_url && (
+                      {!!app.ios_url && (
                         <a href={String(app.ios_url)} target="_blank" rel="noopener noreferrer"
                           style={{ fontSize: '11px', color: cfg.color }}>iOS</a>
                       )}
-                      {app.android_url && (
+                      {!!app.android_url && (
                         <a href={String(app.android_url)} target="_blank" rel="noopener noreferrer"
                           style={{ fontSize: '11px', color: cfg.color, marginLeft: '4px' }}>Android</a>
                       )}
@@ -138,7 +138,7 @@ export default function TipCard({ stop }: TipCardProps) {
                     <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
                       💰 {String(item.price_range)} · 🏪 {String(item.where_to_buy)}
                     </div>
-                    {item.description && (
+                    {!!item.description && (
                       <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>
                         {String(item.description)}
                       </div>
@@ -160,7 +160,7 @@ export default function TipCard({ stop }: TipCardProps) {
                     <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
                       💰 {String(dish.price_range)}
                     </div>
-                    {dish.avoid_tourist_trap && (
+                    {!!dish.avoid_tourist_trap && (
                       <div style={{ fontSize: '11px', color: '#f97316', marginTop: '4px' }}>
                         ⚠️ {String(dish.avoid_tourist_trap)}
                       </div>
@@ -173,12 +173,12 @@ export default function TipCard({ stop }: TipCardProps) {
             {/* ESIM / TRANSPORT_CARD 단순 정보 */}
             {(tipType === 'ESIM' || tipType === 'TRANSPORT_CARD') && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {meta.price_range && (
+                {!!meta.price_range && (
                   <span style={{ fontSize: '13px', color: '#374151' }}>
                     💰 예상 비용: {String(meta.price_range)}
                   </span>
                 )}
-                {meta.where_to_get && (
+                {!!meta.where_to_get && (
                   <span style={{ fontSize: '13px', color: '#374151' }}>
                     📍 구매처: {String(meta.where_to_get)}
                   </span>

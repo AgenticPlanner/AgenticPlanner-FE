@@ -3,7 +3,7 @@ import type { ItineraryStop } from '@/types/index';
 import { Badge, Chip, Card } from '@/components/ui';
 import { CategoryIcon } from '@/components/common';
 import { uploadTicket, getDirections } from '@/api/plans';
-import { isValidNaverFlightUrl, getFlightUrl, buildTransportUrlClient } from '@/utils/flightUrl';
+import { isValidNaverFlightUrl, buildTransportUrlClient } from '@/utils/flightUrl';
 
 interface StopCardProps {
   stop: ItineraryStop;
@@ -15,6 +15,7 @@ const CATEGORY_LABELS: Record<ItineraryStop['category'], string> = {
   transport: '이동',
   sightseeing: '관광',
   stay: '숙박',
+  tip: '여행팁',
 };
 
 const getCategoryLabel = (category: ItineraryStop['category']) =>
@@ -50,7 +51,6 @@ export default function StopCard({ stop }: StopCardProps) {
   };
 
   const handleDirections = async () => {
-    const dest = stop.location || stop.title;
     if (stop.externalLink?.includes('map.naver.com/p/directions/')) {
       window.open(stop.externalLink, '_blank');
       return;
