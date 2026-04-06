@@ -1,8 +1,6 @@
 import type { TripDay } from '@/types/index';
 import type { APIPlanWeather, APIPlanTransport, APIDailyInfo } from '@/types/api';
 import { StatRow } from '@/components/ui';
-import { GlassPanel } from '@/components/common';
-import { MapPin } from 'lucide-react';
 import KakaoMap from '@/components/common/KakaoMap';
 interface DaySidebarProps {
   day: TripDay;
@@ -13,8 +11,8 @@ interface DaySidebarProps {
   dailyInfo?: APIDailyInfo;
 }
 
-export default function DaySidebar({ day, dayIndex, actualSpent, weather, transport, dailyInfo }: DaySidebarProps) {
-  const effectiveWeather = dailyInfo?.weather ?? weather;
+export default function DaySidebar({ day, dayIndex, actualSpent, weather, transport: _transport, dailyInfo }: DaySidebarProps) {
+  const effectiveWeather = (dailyInfo?.weather?.avg_temp_c != null ? dailyInfo.weather : undefined) ?? weather;
   return (
     <div className="space-y-8 font-body">
       <div className="bg-white rounded-[20px] shadow-header overflow-hidden border border-slate-100">

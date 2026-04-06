@@ -1,5 +1,6 @@
 export { default as PlanInfoBanner } from './PlanInfoBanner';
 export { default as StopCard } from './StopCard';
+export { default as TipCard } from './TipCard';
 export { default as DaySelector } from './DaySelector';
 export { default as DaySidebar } from './DaySidebar';
 export { default as TimelineThread } from './TimelineThread';

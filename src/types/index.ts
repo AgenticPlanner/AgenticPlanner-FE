@@ -31,7 +31,7 @@ export interface ItineraryStop {
   id: string;
   time: string;
   endTime?: string;
-  category: 'dining' | 'transit' | 'sightseeing' | 'stay' | 'transport';
+  category: 'dining' | 'transit' | 'sightseeing' | 'stay' | 'transport' | 'tip';
   title: string;
   subtitle?: string;
   description?: string;
@@ -45,6 +45,9 @@ export interface ItineraryStop {
   externalLink?: string;
   ticketUrl?: string;
   status?: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+  tip_type?: string | null;
+  tip_metadata?: Record<string, unknown>;
+  transportParams?: Record<string, unknown>;
 }
 
 export interface DayStats {

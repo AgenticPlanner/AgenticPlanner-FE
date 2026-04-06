@@ -76,20 +76,13 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     setActivePlanIdState(id);
     localStorage.setItem(STORAGE_KEY, id);
 
-    // 이미 로드된 plans에서 찾기
-    const cached = plans.find(p => p.id === id);
-    if (cached) {
-      setActivePlan(cached);
-      return;
-    }
-
-    // 캐시에 없으면 별도 fetch
+    // 항상 최신 데이터 fetch (캐시 무시 — editing 후 stale 방지)
     setLoading(true);
     getPlan(id)
       .then(setActivePlan)
       .catch(() => setError('플랜을 불러오지 못했습니다.'))
       .finally(() => setLoading(false));
-  }, [plans]);
+  }, []);
 
   return (
     <PlanContext.Provider

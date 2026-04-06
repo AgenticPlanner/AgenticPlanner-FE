@@ -1,29 +1,59 @@
 import { useState, useRef, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { AppLayout } from '@/components/layout';
 import { DaySelector, TimelineThread, StopCard, DaySidebar, ItinerarySkeleton } from '@/components/features/itinerary';
 import { FABGroup, ResizeDivider, EmptyState } from '@/components/common';
 import { StatRow } from '@/components/ui';
 import { usePanelResize } from '@/hooks/usePanelResize';
 import { usePlanContext } from '@/contexts/PlanContext';
+import { getPlan } from '@/api/plans';
+import type { APIPlan } from '@/types/api';
 import { adaptPlanToTripDays } from '@/utils/adapters';
 type ItineraryMobileTab = 'timeline' | 'sidebar';
 
 export default function ItineraryPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const urlPlanId = searchParams.get('planId');
 
-  const { activePlan, activePlanId, setActivePlanId, loading, error, refetch } = usePlanContext();
+  const { activePlan, setActivePlanId, refetch } = usePlanContext();
 
-  // URL planId가 있으면 해당 플랜 활성화
+  // 로컬 플랜 상태 — 마운트마다 직접 fetch하여 PlanContext 캐시 우회
+  const [localPlan, setLocalPlan] = useState<APIPlan | null>(null);
+  const [localLoading, setLocalLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  // urlPlanId 변경 또는 마운트 시 항상 직접 API 호출 (컴포넌트 인스턴스가 바뀌므로 매 진입마다 실행됨)
   useEffect(() => {
-    if (urlPlanId && urlPlanId !== activePlanId) {
-      setActivePlanId(urlPlanId);
-    }
-  }, [urlPlanId, activePlanId, setActivePlanId]);
+    if (!urlPlanId) return;
+    setLocalLoading(true);
+    setLocalPlan(null);
+    setLocalError(null);
+    getPlan(urlPlanId)
+      .then(data => {
+        setLocalPlan(data);
+        setActivePlanId(urlPlanId); // PlanContext도 최신화 (다른 컴포넌트용)
+      })
+      .catch(() => setLocalError('플랜을 불러오지 못했습니다.'))
+      .finally(() => setLocalLoading(false));
+  // setActivePlanId는 stable (useCallback [])이므로 deps 생략해도 안전
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlPlanId]);
 
-  const tripDays = activePlan ? adaptPlanToTripDays(activePlan) : [];
+  // forceRefresh state 초기화 (뒤로가기 재발동 방지)
+  useEffect(() => {
+    if (!location.state?.forceRefresh) return;
+    navigate(location.pathname + location.search, { replace: true, state: {} });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.forceRefresh]);
+
+  // 표시할 플랜: 직접 fetch 결과 우선, 없으면 context fallback
+  const plan = localPlan ?? activePlan;
+  const isLoading = localLoading;
+  const error = localError;
+
+  const tripDays = plan ? adaptPlanToTripDays(plan) : [];
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
@@ -31,7 +61,7 @@ export default function ItineraryPage() {
   // 플랜 전환 시 Day 1로 리셋
   useEffect(() => {
     setActiveDayIndex(0);
-  }, [activePlanId]);
+  }, [urlPlanId]);
 
   const activeDay = tripDays[activeDayIndex] ?? null;
   const currentStops = activeDay?.stops ?? [];
@@ -57,26 +87,37 @@ export default function ItineraryPage() {
   });
 
   return (
-    <AppLayout topBarTitle={activePlan?.title || '일정'}>
+    <AppLayout topBarTitle={plan?.title || '일정'}>
       {/* 그라데이션 추가 */}
       <div className="bg-itinerary-gradient min-h-full">
         <div className="pt-12 px-6 md:px-12 pb-20 max-w-6xl w-full mx-auto font-body">
           {/* 로딩 */}
-          {loading && (
+          {isLoading && (
             <div className="mt-8">
               <ItinerarySkeleton />
             </div>
           )}
 
           {/* 에러 */}
-          {error && !loading && (
+          {error && !isLoading && (
             <div className="flex flex-col items-center gap-4 py-20">
               <div className="bg-red-50 text-red-600 text-sm font-medium rounded-xl px-5 py-4">
                 {error}
               </div>
               <button
                 type="button"
-                onClick={refetch}
+                onClick={() => {
+                  if (urlPlanId) {
+                    setLocalLoading(true);
+                    setLocalError(null);
+                    getPlan(urlPlanId)
+                      .then(setLocalPlan)
+                      .catch(() => setLocalError('플랜을 불러오지 못했습니다.'))
+                      .finally(() => setLocalLoading(false));
+                  } else {
+                    refetch();
+                  }
+                }}
                 className="bg-primary text-white px-6 py-3 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity"
               >
                 다시 시도
@@ -85,7 +126,7 @@ export default function ItineraryPage() {
           )}
 
           {/* 플랜 없음 */}
-          {!loading && !error && !activePlan && (
+          {!isLoading && !error && !plan && (
             <EmptyState
               icon="map"
               title="아직 플랜이 없어요"
@@ -96,7 +137,7 @@ export default function ItineraryPage() {
           )}
 
           {/* 플랜 있지만 일정 없음 */}
-          {!loading && !error && activePlan && tripDays.length === 0 && (
+          {!isLoading && !error && plan && tripDays.length === 0 && (
             <EmptyState
               icon="event_note"
               title="일정이 아직 없어요"
@@ -107,16 +148,16 @@ export default function ItineraryPage() {
           )}
 
           {/* 정상 렌더링 */}
-          {!loading && activePlan && tripDays.length > 0 && activeDay && (
+          {!isLoading && plan && tripDays.length > 0 && activeDay && (
             <>
               {/* Hero Section */}
               <div className="mb-10 md:mb-16 flex flex-col items-start gap-8">
                 <div className="inline-flex flex-col items-start gap-2">
                   <span className="text-xs font-bold text-primary-dark tracking-[1.2px] uppercase">
-                    {activePlan.plan_type || '여행 일정'}
+                    {plan.plan_type || '여행 일정'}
                   </span>
                   <h2 className="font-body font-normal text-5xl leading-[48px] text-on-surface">
-                    {activePlan.title || 'Trip Itinerary'}
+                    {plan.title || 'Trip Itinerary'}
                   </h2>
                 </div>
 
@@ -183,11 +224,11 @@ export default function ItineraryPage() {
                   <DaySidebar
                     day={activeDay}
                     dayIndex={activeDayIndex + 1}
-                    dailyInfo={activePlan.days?.[activeDayIndex]?.daily_info}
-                    weather={activePlan.extra_data?.weather}
-                    transport={activePlan.extra_data?.transport}
+                    dailyInfo={plan.days?.[activeDayIndex]?.daily_info}
+                    weather={plan.extra_data?.weather}
+                    transport={plan.extra_data?.transport}
                     actualSpent={(() => {
-                      const rawDay = activePlan.days?.[activeDayIndex];
+                      const rawDay = plan.days?.[activeDayIndex];
                       if (!rawDay) return 0;
                       return rawDay.items
                         .filter(i => i.is_done && i.actual_amount)
@@ -195,14 +236,14 @@ export default function ItineraryPage() {
                     })()}
                   />
 
-                  {activePlan.total_budget && Number(activePlan.total_budget) > 0 && (
+                  {plan.total_budget && Number(plan.total_budget) > 0 && (
                     <div className="bg-white rounded-xl  border border-surface-container-high p-6 shadow-header">
                       <h5 className="font-bold text-lg text-on-surface mb-4">
                         플랜 예산
                       </h5>
                       <StatRow
                         label="총 예산"
-                        value={`₩${Number(activePlan.total_budget).toLocaleString()}`}
+                        value={`₩${Number(plan.total_budget).toLocaleString()}`}
                         valueClassName="text-primary-dark"
                       />
                     </div>
