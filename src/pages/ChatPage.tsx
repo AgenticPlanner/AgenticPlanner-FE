@@ -337,7 +337,7 @@ export default function ChatPage() {
             {planId && (
               <button
                 type="button"
-                onClick={() => navigate(`/itinerary?planId=${planId}`)}
+                onClick={() => navigate(`/itinerary?planId=${planId}`, { state: { forceRefresh: true } })}
                 className="bg-primary text-on-primary px-4 py-1.5 rounded-full text-sm font-semibold font-body"
               >
                 플랜 보기
@@ -455,7 +455,9 @@ export default function ChatPage() {
               <button
                 type="button"
                 onClick={() => {
-                  navigate(`/itinerary?planId=${planId}`);
+                  navigate(`/itinerary?planId=${planId}`, {
+                    state: { forceRefresh: true, ts: Date.now() },
+                  });
                   setPlanNeedsRefresh(false);
                 }}
                 style={{
@@ -482,7 +484,7 @@ export default function ChatPage() {
               </p>
               <button
                 type="button"
-                onClick={() => navigate(`/itinerary?planId=${planId}`)}
+                onClick={() => navigate(`/itinerary?planId=${planId}`, { state: { forceRefresh: true } })}
                 className="signature-gradient text-on-primary px-6 py-2.5 rounded-full font-semibold font-body"
               >
                 플랜 상세보기

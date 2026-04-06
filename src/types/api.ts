@@ -194,6 +194,7 @@ export interface SSEEvent {
   concepts?: Concept[];        // phase_change 이벤트에서 직접 전달될 수 있음
   session?: AgentSession;
   plan_id?: string;
+  plan_updated?: boolean;
   error?: string;
 }
 
