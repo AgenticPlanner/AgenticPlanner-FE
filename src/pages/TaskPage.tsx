@@ -242,7 +242,9 @@ export default function TaskPage() {
   );
 
   const tasks: Task[] = useMemo(
-    () => localItems.filter(item => item.category !== 'TIP').map(item => itemToTask(item, destination)),
+    () => localItems
+      .filter(item => item.category !== 'TIP' && item.is_task === true)
+      .map(item => itemToTask(item, destination)),
     [localItems, destination],
   );
 
