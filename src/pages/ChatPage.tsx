@@ -224,9 +224,22 @@ export default function ChatPage() {
               }
               if (event.plan_id) setPlanId(event.plan_id);
               setCrawlingDone(false);
+              // 스트리밍 완료 시 JSON 잔재 최후 제거
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === assistantId ? { ...m, isStreaming: false } : m
+                  m.id === assistantId
+                    ? {
+                        ...m,
+                        isStreaming: false,
+                        content: m.content
+                          .replace(/```json[\s\S]*?```/gi, '')
+                          .replace(/```[\s\S]*?```/g, '')
+                          .replace(/<!--JSON:[\s\S]*?-->/g, '')
+                          .replace(/\{[^{}]*"phase"[^{}]*\}/g, '')
+                          .replace(/\n{3,}/g, '\n\n')
+                          .trim(),
+                      }
+                    : m
                 )
               );
               break;
