@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { APIPlanItem } from '../types/api';
 import { AppLayout } from '../components/layout';
@@ -246,10 +246,21 @@ export default function TaskPage() {
 
   useEffect(() => { refreshBudget(); }, [refreshBudget]);
 
-  const allTasks = localItems.filter(i => i.is_task);
-  const bookingItems = allTasks.filter(i => i.task_section === 'BOOKING');
-  const reviewItems = allTasks.filter(i => i.task_section === 'REVIEW');
-  const tipsItems = allTasks.filter(i => i.task_section === 'TIPS');
+  const allTasks = useMemo(
+    () => localItems.filter(i => i.is_task === true).sort((a, b) => {
+      const order: Record<string, number> = { BOOKING: 0, REVIEW: 1, TIPS: 2 };
+      return (order[a.task_section ?? ''] ?? 3) - (order[b.task_section ?? ''] ?? 3);
+    }),
+    [localItems],
+  );
+  const bookingItems = useMemo(() => allTasks.filter(i => i.task_section === 'BOOKING'), [allTasks]);
+  const reviewItems  = useMemo(() => allTasks.filter(i => i.task_section === 'REVIEW'),  [allTasks]);
+  const tipsItems    = useMemo(() => allTasks.filter(i => i.task_section === 'TIPS'),    [allTasks]);
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[TaskPage] 전체 아이템:', localItems.length, '/ task 수:', allTasks.length);
+    console.log('[TaskPage] BOOKING:', bookingItems.length, 'REVIEW:', reviewItems.length, 'TIPS:', tipsItems.length);
+  }
 
   const bookingDone = bookingItems.filter(i => i.is_done).length;
   const bookingTotal = bookingItems.length;
