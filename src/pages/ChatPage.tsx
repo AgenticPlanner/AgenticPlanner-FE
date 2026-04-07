@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { AgentSession, AgentMessage, SSEEvent, Concept, TravelInfo } from '@/types/api';
 import { getAgentSession, getSessionList, streamChat, selectConcept } from '@/api/agent';
@@ -6,6 +6,7 @@ import { getPlan } from '@/api/plans';
 import { AppLayout } from '@/components/layout';
 import ChatSidebar from '@/components/features/chat/ChatSidebar';
 import CrawlingStatus from '@/components/CrawlingStatus';
+import PlanningOverlay from '@/components/PlanningOverlay';
 import QuickReplyButtons from '@/components/features/chat/QuickReplyButtons';
 
 // ─── 로컬 타입 ────────────────────────────────────────────────────────────────
@@ -70,6 +71,7 @@ export default function ChatPage() {
     transports: number;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPlanningOverlay, setShowPlanningOverlay] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -217,6 +219,7 @@ export default function ChatPage() {
               break;
 
             case 'done':
+              setShowPlanningOverlay(false);
               // event.session이 있으면 전체 세션 교체 (phase, concepts 모두 최신화)
               // 없으면 plan 정보만 병합
               if (event.session) {
@@ -288,11 +291,32 @@ export default function ChatPage() {
     try {
       const updated = await selectConcept(sessionId, conceptId);
       setSession(updated);
-      handleSend('이 컨셉으로 확정할게요!');
+      setShowPlanningOverlay(true);
+      await handleSend('계획 세워줘');
     } catch {
+      setIsStreaming(false);
+      setShowPlanningOverlay(false);
       setError('컨셉 선택에 실패했습니다.');
     }
   }, [sessionId, isStreaming, handleSend]);
+
+  // ── overlayProgress — early return 이전에 선언 (Rules of Hooks) ─────────────
+  const overlayProgress = useMemo(() => {
+    if (!isStreaming) return 0;
+    let p = 10;
+    if (crawlingStatus) {
+      p = 25;
+      if (crawlingStatus.accommodation_count > 0) p = Math.max(p, 40);
+      if (crawlingStatus.activity_count > 0)      p = Math.max(p, 55);
+      if (crawlingStatus.flight_count > 0)         p = Math.max(p, 65);
+      if (crawlingStatus.has_exchange_rate)        p = Math.max(p, 70);
+    }
+    if (thinkingSteps.length > 0) p = Math.max(p, 75);
+    if (thinkingSteps.length > 2) p = Math.max(p, 82);
+    if (thinkingSteps.length > 5) p = Math.max(p, 88);
+    if (thinkingSteps.length > 8) p = Math.max(p, 93);
+    return p;
+  }, [isStreaming, crawlingStatus, thinkingSteps]);
 
   // ── 로딩 화면 ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -582,6 +606,14 @@ export default function ChatPage() {
       </div>
         </main>
       </div>
+      {showPlanningOverlay && (session?.phase === 'planning' || session?.phase === 'result') && (
+        <PlanningOverlay
+          phase={session.phase}
+          crawlingStatus={crawlingStatus}
+          thinkingSteps={thinkingSteps.map((s) => s.text)}
+          progress={overlayProgress}
+        />
+      )}
     </AppLayout>
   );
 }
