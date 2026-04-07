@@ -2,10 +2,12 @@ import React, { useEffect, useRef } from 'react';
 
 interface KakaoMapProps {
     stops: any[];
+    interactive?: boolean; // true면 좌표 클릭 시 팝업 띄우기 (MapPage 전용)
 }
 
-const KakaoMap = ({ stops }: KakaoMapProps) => {
+const KakaoMap = ({ stops, interactive = false }: KakaoMapProps) => {
     const mapContainer = useRef<HTMLDivElement>(null);
+    const currentOverlayRef = useRef<any>(null); // 현재 열린 오버레이 추적
 
     useEffect(() => {
         let resizeObserver: ResizeObserver | null = null;
@@ -25,6 +27,16 @@ const KakaoMap = ({ stops }: KakaoMapProps) => {
                     center: defaultCenter,
                     level: 5,
                 });
+
+                // 지도 클릭 시 열려있는 오버레이 닫기 (interactive 모드일 때만)
+                if (interactive) {
+                    kakao.maps.event.addListener(map, 'click', () => {
+                        if (currentOverlayRef.current) {
+                            currentOverlayRef.current.setMap(null);
+                            currentOverlayRef.current = null;
+                        }
+                    });
+                }
 
                 const bounds = new kakao.maps.LatLngBounds();
                 let hasValidMarker = false;
@@ -58,10 +70,42 @@ const KakaoMap = ({ stops }: KakaoMapProps) => {
                             const marker = new kakao.maps.Marker({
                                 position: position,
                                 title: stop.title,
-                                image: markerImage
+                                image: markerImage,
+                                clickable: interactive // interactive 모드일 때만 클릭 가능
                             });
                             marker.setMap(map);
 
+                            if (interactive) {
+                                const naverUrl = stop.naverMapUrl || `https://map.naver.com/v5/search/${encodeURIComponent(stop.location || stop.title)}`;
+
+                                // 순수 문자열 생성
+                                const contentString = `
+        <div style="position: relative; bottom: 45px; border-radius: 12px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px rgba(0,0,0,0.1); min-width: 180px; padding: 12px;">
+            <div style="display: inline-block; background: #edeff1; color: #668369; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px;">Day ${stop.dayNumber}</div>
+            <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: #1e293b;">${stop.title}</h4>
+            <a href="${naverUrl}" target="_blank" rel="noopener noreferrer" style="
+                text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 4px;
+                padding: 6px; background: #03c75a; color: #fff; border-radius: 6px; font-size: 11px; font-weight: 600;
+            ">🗺️ 길찾기</a>
+            <div style="position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); width: 12px; height: 12px; background: #fff; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; transform: translateX(-50%) rotate(45deg);"></div>
+        </div>
+    `;
+                                const overlay = new kakao.maps.CustomOverlay({
+                                    content: contentString,
+                                    position: position,
+                                    yAnchor: 1,
+                                    zIndex: 3,
+                                    clickable: true
+                                });
+
+                                kakao.maps.event.addListener(marker, 'click', () => {
+                                    if (currentOverlayRef.current) {
+                                        currentOverlayRef.current.setMap(null);
+                                    }
+                                    overlay.setMap(map);
+                                    currentOverlayRef.current = overlay;
+                                });
+                            }
                             bounds.extend(position);
                             linePath.push(position);
                         }
@@ -113,18 +157,17 @@ const KakaoMap = ({ stops }: KakaoMapProps) => {
         }
 
         return () => {
-            if (resizeObserver) {
-                resizeObserver.disconnect();
-            }
+            if (resizeObserver) resizeObserver.disconnect();
+            if (currentOverlayRef.current) currentOverlayRef.current.setMap(null);
         };
-    }, [stops]);
+    }, [stops, interactive]); // interactive 변경 시에도 다시 그리도록 추가
 
     return (
         <div
             ref={mapContainer}
             style={{
                 width: '100%',
-                height: '256px',
+                height: '100%',
                 backgroundColor: '#f8fafc',
                 position: 'relative',
                 overflow: 'hidden',
@@ -136,5 +179,5 @@ const KakaoMap = ({ stops }: KakaoMapProps) => {
 
 export default React.memo(KakaoMap, (prevProps, nextProps) => {
     // 전 props, 후 props의 stops 배열을 JSON 문자열로 변환하여 비교 -> 배열 내용 같으면 리렌더링 방지
-    return JSON.stringify(prevProps.stops) === JSON.stringify(nextProps.stops);
+    return JSON.stringify(prevProps.stops) === JSON.stringify(nextProps.stops) && prevProps.interactive === nextProps.interactive;
 });
