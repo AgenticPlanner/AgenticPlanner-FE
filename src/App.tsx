@@ -11,6 +11,7 @@ const TaskPage = lazy(() => import('./pages/TaskPage'));
 const ItineraryPage = lazy(() => import('./pages/ItineraryPage'));
 const PlanPage = lazy(() => import('./pages/PlanPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
+const MapPage = lazy(() => import('./pages/MapPage'));
 
 const Spinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-background">
@@ -23,57 +24,67 @@ export default function App() {
     <AuthProvider>
       <ChatProvider>
         <PlanProvider>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route
-          path="/auth"
-          element={
-            <Suspense fallback={<Spinner />}>
-              <AuthPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/tasks"
-          element={
-            <Suspense fallback={<Spinner />}>
-              <ProtectedRoute>
-                <TaskPage />
-              </ProtectedRoute>
-            </Suspense>
-          }
-        />
-        <Route
-          path="/itinerary"
-          element={
-            <Suspense fallback={<Spinner />}>
-              <ProtectedRoute>
-                <ItineraryPage />
-              </ProtectedRoute>
-            </Suspense>
-          }
-        />
-        <Route
-          path="/plan"
-          element={
-            <Suspense fallback={<Spinner />}>
-              <ProtectedRoute>
-                <PlanPage />
-              </ProtectedRoute>
-            </Suspense>
-          }
-        />
-        <Route
-          path="/chat"
-          element={
-            <Suspense fallback={<Spinner />}>
-              <ProtectedRoute>
-                <ChatPage />
-              </ProtectedRoute>
-            </Suspense>
-          }
-        />
-      </Routes>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route
+              path="/auth"
+              element={
+                <Suspense fallback={<Spinner />}>
+                  <AuthPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/tasks"
+              element={
+                <Suspense fallback={<Spinner />}>
+                  <ProtectedRoute>
+                    <TaskPage />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="/itinerary"
+              element={
+                <Suspense fallback={<Spinner />}>
+                  <ProtectedRoute>
+                    <ItineraryPage />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="/map"
+              element={
+                <Suspense fallback={<Spinner />}>
+                  <ProtectedRoute>
+                    <MapPage />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="/plan"
+              element={
+                <Suspense fallback={<Spinner />}>
+                  <ProtectedRoute>
+                    <PlanPage />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="/chat"
+              element={
+                <Suspense fallback={<Spinner />}>
+                  <ProtectedRoute>
+                    <ChatPage />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+          </Routes>
         </PlanProvider>
       </ChatProvider>
     </AuthProvider>
