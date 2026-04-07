@@ -257,7 +257,7 @@ export default function TaskPage() {
   const reviewItems  = useMemo(() => allTasks.filter(i => i.task_section === 'REVIEW'),  [allTasks]);
   const tipsItems    = useMemo(() => allTasks.filter(i => i.task_section === 'TIPS'),    [allTasks]);
 
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log('[TaskPage] 전체 아이템:', localItems.length, '/ task 수:', allTasks.length);
     console.log('[TaskPage] BOOKING:', bookingItems.length, 'REVIEW:', reviewItems.length, 'TIPS:', tipsItems.length);
   }
