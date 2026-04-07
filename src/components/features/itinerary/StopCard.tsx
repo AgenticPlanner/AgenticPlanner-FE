@@ -1,8 +1,6 @@
-import { useState, useRef } from 'react';
 import type { ItineraryStop } from '@/types/index';
 import { Badge, Chip, Card } from '@/components/ui';
 import { CategoryIcon } from '@/components/common';
-import { uploadTicket, getDirections } from '@/api/plans';
 import { isValidNaverFlightUrl, buildTransportUrlClient } from '@/utils/flightUrl';
 
 interface StopCardProps {
@@ -34,46 +32,12 @@ const formatAmount = (amount: string) => {
 };
 
 export default function StopCard({ stop }: StopCardProps) {
-  const [localTicketUrl, setLocalTicketUrl] = useState(stop.ticketUrl);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showOriginInput, setShowOriginInput] = useState(false);
-  const [originInput, setOriginInput] = useState('');
+  const ticketUrl = stop.ticketUrl;
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const updated = await uploadTicket(stop.id, file);
-      if (updated.ticket_url) setLocalTicketUrl(updated.ticket_url);
-    } finally {
-      e.target.value = '';
-    }
-  };
-
-  const handleDirections = async () => {
-    if (stop.externalLink?.includes('map.naver.com/p/directions/')) {
-      window.open(stop.externalLink, '_blank');
-      return;
-    }
-    setShowOriginInput(true);
-  };
-
-  const handleOriginSubmit = async () => {
-    if (!originInput.trim()) return;
-    const dest = stop.location || stop.title;
-    try {
-      const data = await getDirections(dest, originInput, 'transit');
-      if (data.url) {
-        window.open(data.url, '_blank');
-        setShowOriginInput(false);
-        setOriginInput('');
-      }
-    } catch {
-      const q = encodeURIComponent(`${originInput}에서 ${dest}`);
-      window.open(`https://map.naver.com/p/search/${q}`, '_blank');
-      setShowOriginInput(false);
-      setOriginInput('');
-    }
+  const handleDirections = () => {
+    const url = stop.naverMapUrl
+      || `https://map.naver.com/v5/search/${encodeURIComponent(stop.location || stop.title)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const timeLabel = formatTime(stop.time, stop.endTime);
@@ -115,7 +79,7 @@ export default function StopCard({ stop }: StopCardProps) {
                     onClick={handleDirections}
                     className="inline-block mt-2 text-primary-dark text-xs font-bold underline underline-offset-4 hover:opacity-80 transition-opacity"
                   >
-                    길찾기 →
+                    🗺️ 길찾기
                   </button>
                 );
               }
@@ -136,32 +100,6 @@ export default function StopCard({ stop }: StopCardProps) {
               }
               return null;
             })()}
-            {showOriginInput && (
-              <div
-                style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-                onClick={() => setShowOriginInput(false)}
-              >
-                <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: '16px', padding: '24px', width: '320px' }}>
-                  <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: 600 }}>길찾기</h3>
-                  <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#6b7280' }}>
-                    {stop.location || stop.title}(으)로 가는 길을 찾을게요.
-                  </p>
-                  <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#374151', fontWeight: 500 }}>출발지를 입력해주세요</p>
-                  <input
-                    value={originInput}
-                    onChange={e => setOriginInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleOriginSubmit()}
-                    placeholder="예: 강남역, 숙소 주소, 홍대입구역"
-                    autoFocus
-                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', marginBottom: '12px' }}
-                  />
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => setShowOriginInput(false)} style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer' }}>취소</button>
-                    <button onClick={handleOriginSubmit} style={{ flex: 1, padding: '10px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>길찾기 →</button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
           <span className="material-symbols-outlined text-primary-dark text-2xl">trending_flat</span>
         </div>
@@ -222,9 +160,9 @@ export default function StopCard({ stop }: StopCardProps) {
 
               {/* Action buttons */}
               <div className="flex space-x-3 flex-wrap gap-2">
-                {localTicketUrl ? (
+                {ticketUrl && (
                   <a
-                    href={localTicketUrl}
+                    href={ticketUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-surface-container-high px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 hover:bg-surface-container transition-colors"
@@ -232,17 +170,7 @@ export default function StopCard({ stop }: StopCardProps) {
                     <span className="material-symbols-outlined text-sm">confirmation_number</span>
                     <span>예매 티켓 보기</span>
                   </a>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="bg-surface-container-high px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 hover:bg-surface-container transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-sm">upload_file</span>
-                    <span>파일 등록</span>
-                  </button>
                 )}
-                <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileChange} />
                 {stop.externalLink && (
                   <a
                     href={stop.externalLink}
@@ -324,9 +252,9 @@ export default function StopCard({ stop }: StopCardProps) {
           )}
 
           <div className="flex space-x-4 flex-wrap gap-y-2 mt-4 items-center">
-            {localTicketUrl ? (
+            {ticketUrl && (
               <a
-                href={localTicketUrl}
+                href={ticketUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-surface-container-high rounded-2xl text-xs font-bold text-secondary flex items-center gap-2 px-2 py-0.5 hover:brightness-95 transition-all"
@@ -334,23 +262,7 @@ export default function StopCard({ stop }: StopCardProps) {
                 <span className="material-symbols-outlined text-xs">confirmation_number</span>
                 <span>예매 티켓 보기</span>
               </a>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-surface-container-high rounded-2xl text-xs font-bold text-secondary flex items-center gap-2 px-2 py-0.5 hover:brightness-95 transition-all"
-              >
-                <span className="material-symbols-outlined text-xs">upload_file</span>
-                <span>파일 등록</span>
-              </button>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={handleFileChange}
-            />
             {stop.externalLink && (
               <a
                 href={stop.externalLink}
@@ -360,6 +272,27 @@ export default function StopCard({ stop }: StopCardProps) {
               >
                 지도/예약 상세
               </a>
+            )}
+            {(stop.location || stop.naverMapUrl) && (
+              <button
+                type="button"
+                onClick={handleDirections}
+                style={{
+                  padding: '5px 10px',
+                  background: '#03c75a',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                }}
+              >
+                🗺️ 길찾기
+              </button>
             )}
           </div>
         </div>

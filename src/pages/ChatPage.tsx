@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { AgentSession, AgentMessage, SSEEvent, Concept, TravelInfo } from '@/types/api';
 import { getAgentSession, getSessionList, streamChat, selectConcept } from '@/api/agent';
+import { getPlan } from '@/api/plans';
 import { AppLayout } from '@/components/layout';
 import ChatSidebar from '@/components/features/chat/ChatSidebar';
-import PlanningProgress from '@/components/features/chat/PlanningProgress';
+import CrawlingStatus from '@/components/CrawlingStatus';
+import PlanningOverlay from '@/components/PlanningOverlay';
 import QuickReplyButtons from '@/components/features/chat/QuickReplyButtons';
 
 // ─── 로컬 타입 ────────────────────────────────────────────────────────────────
@@ -21,7 +23,7 @@ interface ThinkingStep {
   timestamp: number;
 }
 
-interface CrawlingStatus {
+interface CrawlingStatusData {
   accommodation_count: number;
   activity_count: number;
   flight_count: number;
@@ -59,10 +61,17 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
-  const [crawlingStatus, setCrawlingStatus] = useState<CrawlingStatus | null>(null);
+  const [crawlingStatus, setCrawlingStatus] = useState<CrawlingStatusData | null>(null);
   const [planId, setPlanId] = useState<string | null>(null);
-  const [planNeedsRefresh, setPlanNeedsRefresh] = useState(false);
+  const [crawlingDone, setCrawlingDone] = useState(false);
+  const [planSummary, setPlanSummary] = useState<{
+    days: number;
+    accommodations: number;
+    restaurants: number;
+    transports: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPlanningOverlay, setShowPlanningOverlay] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -89,7 +98,7 @@ export default function ChatPage() {
     setThinkingSteps([]);
     setCrawlingStatus(null);
     setPlanId(null);
-    setPlanNeedsRefresh(false);
+    setPlanSummary(null);
     setError(null);
     autoStartFired.current = false;
     setLoading(true);
@@ -185,7 +194,14 @@ export default function ChatPage() {
               break;
 
             case 'tool_result':
-              if (event.result) setCrawlingStatus(event.result);
+              if (event.result) {
+                setCrawlingStatus(event.result);
+                const r = event.result;
+                if (r.accommodation_count > 0 || r.activity_count > 0 ||
+                    r.flight_count > 0 || r.has_exchange_rate) {
+                  setCrawlingDone(true);
+                }
+              }
               break;
 
             case 'phase_change':
@@ -203,6 +219,7 @@ export default function ChatPage() {
               break;
 
             case 'done':
+              setShowPlanningOverlay(false);
               // event.session이 있으면 전체 세션 교체 (phase, concepts 모두 최신화)
               // 없으면 plan 정보만 병합
               if (event.session) {
@@ -216,11 +233,35 @@ export default function ChatPage() {
                   };
                 });
               }
-              if (event.plan_id) setPlanId(event.plan_id);
-              if (event.plan_updated && event.plan_id) setPlanNeedsRefresh(true);
+              if (event.plan_id) {
+                setPlanId(event.plan_id);
+                getPlan(event.plan_id).then((plan) => {
+                  const allItems = plan.days.flatMap((d) => d.items ?? []);
+                  setPlanSummary({
+                    days: plan.days.length,
+                    accommodations: allItems.filter((i) => i.category === 'ACCOMMODATION').length,
+                    restaurants: allItems.filter((i) => i.category === 'RESTAURANT').length,
+                    transports: allItems.filter((i) => i.category === 'TRANSPORT').length,
+                  });
+                }).catch(() => {});
+              }
+              setCrawlingDone(false);
+              // 스트리밍 완료 시 JSON 잔재 최후 제거
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === assistantId ? { ...m, isStreaming: false } : m
+                  m.id === assistantId
+                    ? {
+                        ...m,
+                        isStreaming: false,
+                        content: m.content
+                          .replace(/```json[\s\S]*?```/gi, '')
+                          .replace(/```[\s\S]*?```/g, '')
+                          .replace(/<!--JSON:[\s\S]*?-->/g, '')
+                          .replace(/\{[^{}]*"phase"[^{}]*\}/g, '')
+                          .replace(/\n{3,}/g, '\n\n')
+                          .trim(),
+                      }
+                    : m
                 )
               );
               break;
@@ -250,11 +291,32 @@ export default function ChatPage() {
     try {
       const updated = await selectConcept(sessionId, conceptId);
       setSession(updated);
-      handleSend('이 컨셉으로 확정할게요!');
+      setShowPlanningOverlay(true);
+      await handleSend('계획 세워줘');
     } catch {
+      setIsStreaming(false);
+      setShowPlanningOverlay(false);
       setError('컨셉 선택에 실패했습니다.');
     }
   }, [sessionId, isStreaming, handleSend]);
+
+  // ── overlayProgress — early return 이전에 선언 (Rules of Hooks) ─────────────
+  const overlayProgress = useMemo(() => {
+    if (!isStreaming) return 0;
+    let p = 10;
+    if (crawlingStatus) {
+      p = 25;
+      if (crawlingStatus.accommodation_count > 0) p = Math.max(p, 40);
+      if (crawlingStatus.activity_count > 0)      p = Math.max(p, 55);
+      if (crawlingStatus.flight_count > 0)         p = Math.max(p, 65);
+      if (crawlingStatus.has_exchange_rate)        p = Math.max(p, 70);
+    }
+    if (thinkingSteps.length > 0) p = Math.max(p, 75);
+    if (thinkingSteps.length > 2) p = Math.max(p, 82);
+    if (thinkingSteps.length > 5) p = Math.max(p, 88);
+    if (thinkingSteps.length > 8) p = Math.max(p, 93);
+    return p;
+  }, [isStreaming, crawlingStatus, thinkingSteps]);
 
   // ── 로딩 화면 ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -346,44 +408,25 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* 크롤링 상태 배너 */}
-        {crawlingStatus && (
-          <div className="bg-surface-container-low rounded-xl px-4 py-2 mb-3 text-sm font-body text-on-surface-variant flex flex-wrap gap-3 shrink-0">
-            {crawlingStatus.accommodation_count > 0 && (
-              <span>숙소 {crawlingStatus.accommodation_count}개</span>
-            )}
-            {crawlingStatus.activity_count > 0 && (
-              <span>액티비티 {crawlingStatus.activity_count}개</span>
-            )}
-            {crawlingStatus.flight_count > 0 && (
-              <span>항공 {crawlingStatus.flight_count}개</span>
-            )}
-            {crawlingStatus.has_exchange_rate && <span>환율</span>}
-            <span className="text-primary font-semibold">실시간 수집 완료</span>
-          </div>
-        )}
-
-        {/* Thinking steps */}
-        {thinkingSteps.length > 0 && isStreaming && (
-          <div className="bg-surface-container rounded-xl px-4 py-2 mb-3 text-xs font-body text-on-surface-variant space-y-1 shrink-0">
-            {thinkingSteps.slice(-3).map((s, i) => (
-              <p key={i}>{s.text}</p>
-            ))}
-          </div>
-        )}
-
-        {/* 계획 생성 진행률 */}
-        <PlanningProgress
+        {/* 크롤링 + 계획 생성 진행 상태 */}
+        <CrawlingStatus
           phase={session.phase}
           isStreaming={isStreaming}
-          thinkingSteps={thinkingSteps.map((s) => s.text)}
           crawlingStatus={crawlingStatus}
-          isDone={!!planId}
+          thinkingSteps={thinkingSteps.map((s) => s.text)}
+          isDone={!!planId && !isStreaming}
+          planSummary={planSummary ?? undefined}
+          onViewPlan={planId ? () => navigate(`/itinerary?planId=${planId}`, { state: { forceRefresh: true } }) : undefined}
         />
 
         {/* 메시지 목록 */}
         <div className="flex-1 overflow-y-auto flex flex-col gap-3 no-scrollbar pb-2">
-          {messages.map((msg) => (
+          {messages.filter((msg) => {
+            if (msg.role !== 'assistant') return true;
+            // guideline/detail_collect phase의 스트리밍 응답은 CrawlingStatus로 대체
+            if (msg.isStreaming && (session.phase === 'guideline' || session.phase === 'detail_collect')) return false;
+            return true;
+          }).map((msg) => (
             <div
               key={msg.id}
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -437,45 +480,6 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* editing phase 수정 완료 알림 배너 */}
-          {planNeedsRefresh && planId && (
-            <div style={{
-              padding: '12px 16px',
-              background: '#f0fdf4',
-              border: '1px solid #86efac',
-              borderRadius: '10px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '4px',
-            }}>
-              <span style={{ fontSize: '14px', color: '#166534', fontWeight: 500 }}>
-                수정이 완료됐어요!
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  navigate(`/itinerary?planId=${planId}`, {
-                    state: { forceRefresh: true, ts: Date.now() },
-                  });
-                  setPlanNeedsRefresh(false);
-                }}
-                style={{
-                  padding: '6px 14px',
-                  background: '#22c55e',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                변경된 플랜 보기 →
-              </button>
-            </div>
-          )}
-
           {/* result/editing phase — 플랜 완성·수정 알림 */}
           {(session.phase === 'result' || session.phase === 'editing') && planId && (
             <div className="bg-surface-container-low rounded-2xl p-6 text-center">
@@ -509,6 +513,54 @@ export default function ChatPage() {
           onSend={handleSend}
           isStreaming={isStreaming}
         />
+
+        {/* 크롤링 완료 후 계획 생성 버튼 */}
+        {crawlingDone && !isStreaming && session?.phase === 'planning' && (
+          <div style={{
+            padding: '12px 16px',
+            background: 'linear-gradient(135deg, #f0fdf4, #eff6ff)',
+            border: '1px solid #86efac',
+            borderRadius: '12px',
+            marginBottom: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            animation: 'fadeIn 0.4s ease',
+          }}>
+            <div>
+              <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#166534' }}>
+                🎯 실시간 데이터 수집 완료!
+              </p>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#6b7280' }}>
+                숙소 {crawlingStatus?.accommodation_count ?? 0}개 ·
+                액티비티 {crawlingStatus?.activity_count ?? 0}개 ·
+                {crawlingStatus?.has_exchange_rate ? ' 환율 ✓' : ''}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setCrawlingDone(false);
+                handleSend('계획 세워줘');
+              }}
+              style={{
+                padding: '10px 20px',
+                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 8px rgba(34,197,94,0.3)',
+              }}
+            >
+              ✨ 계획 생성하기
+            </button>
+          </div>
+        )}
 
         {/* 입력창 */}
         <div className="flex gap-2 items-center bg-surface-container-lowest rounded-2xl px-4 py-3 shadow-ambient mt-2 shrink-0">
@@ -554,6 +606,14 @@ export default function ChatPage() {
       </div>
         </main>
       </div>
+      {showPlanningOverlay && (session?.phase === 'planning' || session?.phase === 'result') && (
+        <PlanningOverlay
+          phase={session.phase}
+          crawlingStatus={crawlingStatus}
+          thinkingSteps={thinkingSteps.map((s) => s.text)}
+          progress={overlayProgress}
+        />
+      )}
     </AppLayout>
   );
 }

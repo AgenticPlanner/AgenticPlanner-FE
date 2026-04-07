@@ -67,23 +67,6 @@ export const toggleItemDone = async (
   return res.data;
 };
 
-// 티켓 업로드
-export const uploadTicket = async (itemId: string, file: File): Promise<APIPlanItem> => {
-  const form = new FormData();
-  form.append('ticket', file);
-  const res = await apiClient.post(
-    `/api/v1/plans/items/${itemId}/upload-ticket/`,
-    form,
-    { headers: { 'Content-Type': 'multipart/form-data' } },
-  );
-  return res.data;
-};
-
-// 티켓 삭제
-export const deleteTicket = async (itemId: string): Promise<void> => {
-  await apiClient.delete(`/api/v1/plans/items/${itemId}/upload-ticket/`);
-};
-
 export interface DirectionsResult {
   url: string;
   needs_origin: boolean;
