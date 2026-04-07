@@ -59,6 +59,7 @@ export interface APIPlanItem {
   tip_type?: string | null;
   tip_metadata?: Record<string, unknown>;
   transport_params?: Record<string, unknown>;
+  naver_map_url?: string;
 }
 
 export interface APITransportSegment {

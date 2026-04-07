@@ -48,6 +48,7 @@ export interface ItineraryStop {
   tip_type?: string | null;
   tip_metadata?: Record<string, unknown>;
   transportParams?: Record<string, unknown>;
+  naverMapUrl?: string;
 }
 
 export interface DayStats {

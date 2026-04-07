@@ -61,7 +61,6 @@ export default function ChatPage() {
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
   const [crawlingStatus, setCrawlingStatus] = useState<CrawlingStatus | null>(null);
   const [planId, setPlanId] = useState<string | null>(null);
-  const [planNeedsRefresh, setPlanNeedsRefresh] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -89,7 +88,6 @@ export default function ChatPage() {
     setThinkingSteps([]);
     setCrawlingStatus(null);
     setPlanId(null);
-    setPlanNeedsRefresh(false);
     setError(null);
     autoStartFired.current = false;
     setLoading(true);
@@ -217,7 +215,6 @@ export default function ChatPage() {
                 });
               }
               if (event.plan_id) setPlanId(event.plan_id);
-              if (event.plan_updated && event.plan_id) setPlanNeedsRefresh(true);
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId ? { ...m, isStreaming: false } : m
@@ -434,45 +431,6 @@ export default function ChatPage() {
                   )}
                 </button>
               ))}
-            </div>
-          )}
-
-          {/* editing phase 수정 완료 알림 배너 */}
-          {planNeedsRefresh && planId && (
-            <div style={{
-              padding: '12px 16px',
-              background: '#f0fdf4',
-              border: '1px solid #86efac',
-              borderRadius: '10px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '4px',
-            }}>
-              <span style={{ fontSize: '14px', color: '#166534', fontWeight: 500 }}>
-                수정이 완료됐어요!
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  navigate(`/itinerary?planId=${planId}`, {
-                    state: { forceRefresh: true, ts: Date.now() },
-                  });
-                  setPlanNeedsRefresh(false);
-                }}
-                style={{
-                  padding: '6px 14px',
-                  background: '#22c55e',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                변경된 플랜 보기 →
-              </button>
             </div>
           )}
 

@@ -39,6 +39,7 @@ export const adaptItemToStop = (item: APIPlanItem): ItineraryStop => ({
   tags: item.tags ?? [],
   amount: item.amount,
   externalLink: item.external_link,
+  naverMapUrl: item.naver_map_url,
   ticketUrl: item.ticket_url,
   transportParams: item.transport_params,
   status: item.status,
