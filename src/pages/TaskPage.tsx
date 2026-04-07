@@ -1,221 +1,234 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Task } from '../types/index';
 import type { APIPlanItem } from '../types/api';
 import { AppLayout } from '../components/layout';
-import { TaskCard, TaskSkeleton } from '../components/features/tasks';
-import { SectionHeader } from '../components/ui';
-import { ProgressBar, EmptySlot, EmptyState } from '../components/common';
+import { EmptyState } from '../components/common';
 import { usePlanContext } from '../contexts/PlanContext';
 import { toggleItemDone, getPlanBudgetSummary, type BudgetSummary } from '../api/plans';
 
-// ── 여행 팁 아이콘/레이블 ─────────────────────────────────────────
-const TIP_ICON_MAP: Record<string, { icon: string; label: string; color: string }> = {
-  ESIM:           { icon: '📶', label: 'eSIM',     color: '#6366f1' },
-  TRANSPORT_CARD: { icon: '🚇', label: '교통카드', color: '#0ea5e9' },
-  BIKE:           { icon: '🚲', label: '자전거',   color: '#22c55e' },
-  APP:            { icon: '📱', label: '필수앱',   color: '#f97316' },
-  SOUVENIR:       { icon: '🎁', label: '기념품',   color: '#ec4899' },
-  FOOD_LOCAL:     { icon: '🍜', label: '로컬맛집', color: '#ef4444' },
-  CURRENCY:       { icon: '💴', label: '환전',     color: '#eab308' },
-  SAFETY:         { icon: '🛡️', label: '안전',    color: '#64748b' },
-  WEATHER_TIP:    { icon: '🌤️', label: '날씨',    color: '#0891b2' },
-  GENERAL:        { icon: '💡', label: '여행팁',   color: '#8b5cf6' },
-};
+const SECTION_CONFIG = {
+  BOOKING: {
+    icon: '📋',
+    label: '예약 & 구매',
+    description: '출발 전 완료해야 할 예약/구매 목록',
+    color: '#3b82f6',
+    bg: '#eff6ff',
+    border: '#bfdbfe',
+  },
+  REVIEW: {
+    icon: '🔍',
+    label: '리뷰 & 정보 확인',
+    description: '방문 전 미리 확인할 여행지/맛집 후기',
+    color: '#f97316',
+    bg: '#fff7ed',
+    border: '#fed7aa',
+  },
+  TIPS: {
+    icon: '💡',
+    label: '여행자 팁',
+    description: '현지 여행자들의 꿀팁 모음',
+    color: '#8b5cf6',
+    bg: '#f5f3ff',
+    border: '#ddd6fe',
+  },
+} as const;
 
-// ── TIP CTA 링크 생성 ──────────────────────────────────────────────
-const getTipCtaConfig = (
-  item: APIPlanItem,
-  destination: string,
-): { url: string; label: string; color: string } => {
-  const cfg = TIP_ICON_MAP[item.tip_type ?? 'GENERAL'] ?? TIP_ICON_MAP['GENERAL'];
-  if (item.external_link) return { url: item.external_link, label: '바로가기', color: cfg.color };
+interface TaskSectionProps {
+  section: 'BOOKING' | 'REVIEW' | 'TIPS';
+  config: typeof SECTION_CONFIG[keyof typeof SECTION_CONFIG];
+  items: APIPlanItem[];
+  onToggle: (item: APIPlanItem) => void;
+  onRefresh: () => void;
+}
 
-  const q = encodeURIComponent(`${destination} ${item.title}`);
-  switch (item.tip_type) {
-    case 'ESIM':
-      return { url: `https://search.naver.com/search.naver?query=${encodeURIComponent(destination + ' eSIM 구매')}`, label: 'eSIM 알아보기', color: cfg.color };
-    case 'TRANSPORT_CARD':
-      return { url: `https://search.naver.com/search.naver?query=${encodeURIComponent(destination + ' 교통카드')}`, label: '교통카드 정보', color: cfg.color };
-    case 'APP': {
-      const apps = (item.tip_metadata?.apps as Array<{ ios_url?: string; android_url?: string }> | undefined);
-      const firstLink = apps?.[0]?.ios_url ?? apps?.[0]?.android_url;
-      return { url: firstLink ?? `https://search.naver.com/search.naver?query=${q}`, label: '앱 다운로드', color: cfg.color };
-    }
-    case 'SOUVENIR':
-      return { url: `https://search.naver.com/search.naver?query=${encodeURIComponent(destination + ' 기념품')}`, label: '기념품 검색', color: cfg.color };
-    case 'FOOD_LOCAL':
-      return { url: `https://map.naver.com/v5/search/${encodeURIComponent(destination + ' 맛집')}`, label: '맛집 보기', color: cfg.color };
-    case 'CURRENCY':
-      return { url: 'https://finance.naver.com/marketindex/', label: '환율 확인', color: cfg.color };
-    case 'SAFETY':
-      return { url: `https://search.naver.com/search.naver?query=${encodeURIComponent(destination + ' 여행 안전')}`, label: '안전 정보', color: cfg.color };
-    case 'WEATHER_TIP':
-      return { url: `https://search.naver.com/search.naver?query=${encodeURIComponent(destination + ' 날씨')}`, label: '날씨 확인', color: cfg.color };
-    default:
-      return { url: `https://search.naver.com/search.naver?query=${q}`, label: '자세히 보기', color: cfg.color };
-  }
-};
+function TipsSection({ items }: { items: APIPlanItem[] }) {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
-// ── TIP 설명 포맷 ──────────────────────────────────────────────────
-const formatTipDescription = (item: APIPlanItem): string => {
-  const base = item.description ?? item.subtitle ?? '';
-  const meta = item.tip_metadata;
-  if (!meta) return base;
-
-  const extras: string[] = [];
-  if (item.tip_type === 'APP' && Array.isArray(meta.apps)) {
-    const names = (meta.apps as Array<{ name: string }>).map(a => a.name).slice(0, 3);
-    if (names.length) extras.push(`추천 앱: ${names.join(', ')}`);
-  } else if (item.tip_type === 'SOUVENIR' && Array.isArray(meta.items)) {
-    const names = (meta.items as Array<{ name: string }>).map(i => i.name).slice(0, 3);
-    if (names.length) extras.push(`추천 기념품: ${names.join(', ')}`);
-  } else if (item.tip_type === 'FOOD_LOCAL' && Array.isArray(meta.dishes)) {
-    const names = (meta.dishes as Array<{ name: string }>).map(d => d.name).slice(0, 3);
-    if (names.length) extras.push(`추천 음식: ${names.join(', ')}`);
-  } else if ((item.tip_type === 'ESIM' || item.tip_type === 'TRANSPORT_CARD') && meta.price_range) {
-    extras.push(`예상 비용: ${String(meta.price_range)}`);
-    if (meta.where_to_get) extras.push(`구매처: ${String(meta.where_to_get)}`);
-  }
-  return [base, ...extras].filter(Boolean).join(' · ');
-};
-
-// ── TIP → Task 변환 ────────────────────────────────────────────────
-const tipItemToTask = (item: APIPlanItem, destination: string): Task => {
-  const cta = getTipCtaConfig(item, destination);
-  const isDone = item.is_done ?? false;
-  return {
-    id: item.id,
-    title: item.title,
-    description: formatTipDescription(item),
-    status: isDone ? 'done' : 'todo',
-    icon: 'lightbulb',
-    ctaLabel: cta.label,
-    ctaUrl: cta.url,
-    ctaColor: cta.color,
-    isReview: false,
-    assignees: [],
-    isDone,
-    done_at: item.done_at,
+  const toggle = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
-};
 
-// ── 카테고리 설정 ──────────────────────────────────────────────────
-const CATEGORY_CONFIG: Record<string, { bookingLabel: string; color: string }> = {
-  TRANSPORT:     { bookingLabel: '항공권 예약',  color: '#1a73e8' },
-  ACCOMMODATION: { bookingLabel: '숙소 예약',    color: '#6c5ce7' },
-  ACTIVITY:      { bookingLabel: '액티비티 예약', color: '#f39c12' },
-  RESTAURANT:    { bookingLabel: '식당 검색',    color: '#e17055' },
-  OTHER:         { bookingLabel: '검색하기',     color: '#636e72' },
-};
+  return (
+    <div style={{ padding: '8px' }}>
+      {items.map(item => {
+        const isExp = expandedIds.has(item.id);
+        const summary = item.tip_summary ?? item.description ?? '';
+        const previewLen = 80;
+        const needsExpand = summary.length > previewLen;
 
-// ── 국내 여행지 판단 ───────────────────────────────────────────────
-const isKoreanDestination = (destination: string): boolean => {
-  const koreanCities = [
-    '서울', '부산', '제주', '인천', '대구', '대전', '광주',
-    '수원', '강릉', '경주', '전주', '춘천', '속초', '여수',
-  ];
-  return koreanCities.some(city => destination.includes(city))
-    || /[가-힣]/.test(destination);
-};
+        return (
+          <div key={item.id} style={{
+            padding: '12px',
+            background: '#fafafa',
+            borderRadius: '10px',
+            marginBottom: '8px',
+            border: '1px solid #f3f4f6',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <span style={{ fontSize: '16px', flexShrink: 0 }}>💡</span>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: '13px', color: '#374151' }}>
+                  {item.title}
+                </p>
+                <p style={{ margin: 0, fontSize: '13px', color: '#6b7280', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                  {isExp || !needsExpand ? summary : summary.slice(0, previewLen) + '...'}
+                </p>
+                {needsExpand && (
+                  <button
+                    onClick={() => toggle(item.id)}
+                    style={{
+                      marginTop: '6px', background: 'none', border: 'none',
+                      cursor: 'pointer', fontSize: '12px', color: '#8b5cf6',
+                      fontWeight: 600, padding: 0,
+                    }}
+                  >
+                    {isExp ? '접기 ▲' : '더 보기 ▼'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-// ── 리뷰 검색 URL ─────────────────────────────────────────────────
-const getReviewUrl = (
-  item: APIPlanItem,
-  destination: string,
-  platform: 'naver' | 'youtube' = 'naver',
-): string => {
-  const query = `${destination} ${item.title} 여행 리뷰`;
-  const q = encodeURIComponent(query);
-  if (platform === 'youtube') return `https://www.youtube.com/results?search_query=${q}`;
-  return `https://search.naver.com/search.naver?query=${q}&where=blog`;
-};
+function TaskItem({
+  item,
+  section,
+  onToggle,
+}: {
+  item: APIPlanItem;
+  section: 'BOOKING' | 'REVIEW';
+  onToggle: (item: APIPlanItem) => void;
+}) {
+  const actionUrl = section === 'REVIEW'
+    ? (item.review_url ?? item.external_link ?? '')
+    : (item.external_link ?? '');
 
-// ── 예약 필요 여부 ─────────────────────────────────────────────────
-const needsBooking = (item: APIPlanItem): boolean => {
-  if (item.category === 'TRANSPORT') return true;
-  if (item.category === 'ACCOMMODATION') return true;
-  if (item.tags?.includes('예약필요')) return true;
-  if (item.external_link) return true;
-  return false;
-};
+  const actionLabel = section === 'REVIEW'
+    ? (item.review_url?.includes('youtube') ? '▶ 유튜브 리뷰' : '🔍 네이버 후기')
+    : '예약하기 →';
 
-// ── 예약 폴백 URL (booking 전용) ──────────────────────────────────
-const getFallbackBookingUrl = (item: APIPlanItem, destination: string): string => {
-  const q = encodeURIComponent(`${destination} ${item.title}`);
-  const loc = encodeURIComponent(item.location || destination);
-  switch (item.category) {
-    case 'TRANSPORT':     return `https://flight.naver.com/flights?query=${q}`;
-    case 'ACCOMMODATION': return `https://hotels.naver.com/searchpage/hotel?query=${loc}`;
-    case 'RESTAURANT':    return `https://map.naver.com/v5/search/${q}`;
-    case 'ACTIVITY':      return `https://www.klook.com/ko/search/?query=${q}`;
-    default:              return `https://www.google.com/search?q=${q}`;
-  }
-};
+  const actionColor = section === 'REVIEW'
+    ? (item.review_url?.includes('youtube') ? '#ef4444' : '#03c75a')
+    : '#3b82f6';
 
-// ── 액션 URL · 레이블 · 색상 결정 ────────────────────────────────
-const getActionConfig = (
-  item: APIPlanItem,
-  destination: string,
-): { url: string; label: string; color: string; isReview: boolean } => {
-  const cfg = CATEGORY_CONFIG[item.category] ?? CATEGORY_CONFIG['OTHER'];
+  return (
+    <div style={{
+      padding: '12px 16px',
+      borderBottom: '1px solid #f3f4f6',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      background: item.is_done ? '#fafafa' : '#fff',
+      opacity: item.is_done ? 0.75 : 1,
+    }}>
+      {section === 'BOOKING' && (
+        <button
+          onClick={() => onToggle(item)}
+          style={{
+            width: '22px', height: '22px', borderRadius: '50%',
+            border: `2px solid ${item.is_done ? '#22c55e' : '#d1d5db'}`,
+            background: item.is_done ? '#22c55e' : '#fff',
+            cursor: 'pointer', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '12px', color: '#fff',
+          }}
+        >
+          {item.is_done ? '✓' : null}
+        </button>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{
+          margin: 0, fontSize: '14px', fontWeight: 500,
+          color: item.is_done ? '#9ca3af' : '#111827',
+          textDecoration: item.is_done ? 'line-through' : 'none',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {item.title}
+        </p>
+        {item.subtitle && (
+          <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#9ca3af' }}>
+            {item.subtitle}
+          </p>
+        )}
+      </div>
+      {actionUrl && (
+        <a
+          href={actionUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            padding: '6px 12px', background: actionColor, color: '#fff',
+            borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+            textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+          }}
+        >
+          {actionLabel}
+        </a>
+      )}
+    </div>
+  );
+}
 
-  if (needsBooking(item)) {
-    return {
-      url: item.external_link || getFallbackBookingUrl(item, destination),
-      label: cfg.bookingLabel,
-      color: cfg.color,
-      isReview: false,
-    };
-  }
+function TaskSection({ section, config, items, onToggle, onRefresh: _onRefresh }: TaskSectionProps) {
+  const [expanded, setExpanded] = useState(true);
 
-  const dom = isKoreanDestination(destination);
-  return {
-    url: getReviewUrl(item, destination, dom ? 'naver' : 'youtube'),
-    label: dom ? '네이버 리뷰' : '유튜브 리뷰',
-    color: dom ? '#03c75a' : '#ff0000',
-    isReview: true,
-  };
-};
-
-// ── 헬퍼 함수 ─────────────────────────────────────────────────────
-const categoryToIcon = (category: APIPlanItem['category']): string => {
-  switch (category) {
-    case 'RESTAURANT':    return 'restaurant';
-    case 'TRANSPORT':     return 'directions_car';
-    case 'ACTIVITY':      return 'explore';
-    case 'ACCOMMODATION': return 'hotel';
-    default:              return 'travel_explore';
-  }
-};
-
-const itemToTask = (item: APIPlanItem, destination: string): Task => {
-  const action = getActionConfig(item, destination);
-  const isDone = item.is_done ?? false;
-  return {
-    id: item.id,
-    title: item.title,
-    description: item.description || item.subtitle || item.location || '',
-    status: isDone ? 'done' : (item.status === 'CONFIRMED' || item.status === 'CANCELLED' ? 'done' : 'todo'),
-    icon: categoryToIcon(item.category),
-    ctaLabel: action.label,
-    ctaUrl: action.url,
-    ctaColor: action.color,
-    isReview: action.isReview,
-    assignees: [],
-    isDone,
-    done_at: item.done_at,
-  };
-};
+  return (
+    <div style={{
+      marginBottom: '16px',
+      border: `1px solid ${config.border}`,
+      borderRadius: '14px',
+      overflow: 'hidden',
+    }}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          width: '100%', padding: '14px 16px', background: config.bg,
+          border: 'none', cursor: 'pointer', display: 'flex',
+          alignItems: 'center', gap: '8px', textAlign: 'left',
+        }}
+      >
+        <span style={{ fontSize: '18px' }}>{config.icon}</span>
+        <div style={{ flex: 1 }}>
+          <span style={{ fontWeight: 700, fontSize: '15px', color: config.color }}>
+            {config.label}
+          </span>
+          <span style={{ marginLeft: '8px', fontSize: '12px', color: '#9ca3af' }}>
+            {items.length}개
+          </span>
+        </div>
+        <span style={{ fontSize: '12px', color: config.color, fontWeight: 500 }}>
+          {expanded ? '▲' : '▼'}
+        </span>
+      </button>
+      {expanded && (
+        <div style={{ background: '#fff' }}>
+          {section === 'TIPS'
+            ? <TipsSection items={items} />
+            : items.map(item => (
+                <TaskItem key={item.id} item={item} section={section} onToggle={onToggle} />
+              ))
+          }
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TaskPage() {
   const navigate = useNavigate();
   const { activePlan, loading, error, refetch } = usePlanContext();
 
   const [localItems, setLocalItems] = useState<APIPlanItem[]>([]);
-  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
+  const [, setBudgetSummary] = useState<BudgetSummary | null>(null);
 
-  // activePlan이 바뀌면 localItems 초기화
   useEffect(() => {
     if (!activePlan?.days) return;
     const items = [...activePlan.days]
@@ -225,7 +238,6 @@ export default function TaskPage() {
   }, [activePlan]);
 
   const planId = activePlan?.id ?? '';
-  const destination = activePlan?.title?.split(' ')[0] ?? '';
 
   const refreshBudget = useCallback(() => {
     if (!planId) return;
@@ -234,68 +246,37 @@ export default function TaskPage() {
 
   useEffect(() => { refreshBudget(); }, [refreshBudget]);
 
-  const tipTasks: Task[] = useMemo(
-    () => localItems
-      .filter(item => item.category === 'TIP')
-      .map(item => tipItemToTask(item, destination)),
-    [localItems, destination],
-  );
+  const allTasks = localItems.filter(i => i.is_task);
+  const bookingItems = allTasks.filter(i => i.task_section === 'BOOKING');
+  const reviewItems = allTasks.filter(i => i.task_section === 'REVIEW');
+  const tipsItems = allTasks.filter(i => i.task_section === 'TIPS');
 
-  const tasks: Task[] = useMemo(
-    () => localItems
-      .filter(item => item.category !== 'TIP' && item.is_task === true)
-      .map(item => itemToTask(item, destination)),
-    [localItems, destination],
-  );
+  const bookingDone = bookingItems.filter(i => i.is_done).length;
+  const bookingTotal = bookingItems.length;
+  const completionRate = bookingTotal > 0
+    ? Math.round(bookingDone / bookingTotal * 100) : 0;
 
-  const handleToggleDone = async (itemId: string) => {
+  const handleToggleDone = async (item: APIPlanItem) => {
     try {
-      const updated = await toggleItemDone(itemId);
-      setLocalItems(prev => prev.map(it => it.id === itemId ? updated : it));
+      const updated = await toggleItemDone(item.id);
+      setLocalItems(prev => prev.map(it => it.id === item.id ? updated : it));
       refreshBudget();
     } catch {
       alert('상태 변경에 실패했습니다.');
     }
   };
 
-  const doneCount = budgetSummary?.done_count
-    ?? (tasks.filter(t => t.status === 'done').length + tipTasks.filter(t => t.status === 'done').length);
-  const totalCount = budgetSummary?.total_count ?? (tasks.length + tipTasks.length);
-  const progressPercentage = budgetSummary?.completion_rate
-    ?? (totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0);
+  const hasItems = bookingItems.length > 0 || reviewItems.length > 0 || tipsItems.length > 0;
 
   return (
     <AppLayout topBarTitle="작업">
-      <div className="px-4 py-6 md:px-10 md:py-12 max-w-7xl mx-auto w-full">
-        {/* Hero Section */}
-        <div className="mb-16">
-          <SectionHeader
-            eyebrow="여행 기반"
-            title="기본 계획"
-            subtitle="여행 일정의 모든 항목을 확인하세요"
-            titleSize="4xl"
-            rightSlot={
-              totalCount > 0 ? (
-                <div className="text-right">
-                  <div className="font-headline font-bold text-2xl text-on-surface">
-                    {progressPercentage}%
-                  </div>
-                  <p className="text-outline text-sm">진행률</p>
-                </div>
-              ) : null
-            }
-          />
-          {totalCount > 0 && (
-            <div className="mt-8">
-              <ProgressBar value={progressPercentage} showLabel={false} />
-            </div>
-          )}
-        </div>
+      <div className="px-4 py-6 md:px-10 md:py-12 max-w-3xl mx-auto w-full">
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <span className="text-on-surface-variant">로딩 중...</span>
+          </div>
+        )}
 
-        {/* 로딩 */}
-        {loading && <TaskSkeleton />}
-
-        {/* 에러 */}
         {error && !loading && (
           <div className="flex flex-col items-center gap-4 py-20">
             <div className="bg-red-50 text-red-600 text-sm font-medium rounded-xl px-5 py-4">
@@ -311,7 +292,6 @@ export default function TaskPage() {
           </div>
         )}
 
-        {/* 플랜 없음 */}
         {!loading && !error && !activePlan && (
           <EmptyState
             icon="assignment"
@@ -322,8 +302,7 @@ export default function TaskPage() {
           />
         )}
 
-        {/* 플랜 있지만 items 없음 */}
-        {!loading && !error && activePlan && tasks.length === 0 && tipTasks.length === 0 && (
+        {!loading && !error && activePlan && !hasItems && (
           <EmptyState
             icon="checklist"
             title="할 일이 없어요"
@@ -331,38 +310,54 @@ export default function TaskPage() {
           />
         )}
 
-        {/* Bento Grid */}
-        {!loading && !error && tasks.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {tasks.map((task, idx) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                featured={idx === 0}
-                onToggleDone={() => handleToggleDone(task.id)}
-              />
-            ))}
-            <EmptySlot label="마일스톤 추가" icon="add" />
-          </div>
-        )}
+        {!loading && !error && hasItems && (
+          <>
+            {bookingTotal > 0 && (
+              <div style={{
+                padding: '16px 20px', background: '#fff', borderRadius: '12px',
+                border: '1px solid #e5e7eb', marginBottom: '20px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: 600, fontSize: '14px' }}>예약 완료도</span>
+                  <span style={{ fontWeight: 700, fontSize: '14px', color: completionRate === 100 ? '#22c55e' : '#3b82f6' }}>
+                    {bookingDone}/{bookingTotal} ({completionRate}%)
+                  </span>
+                </div>
+                <div style={{ background: '#f3f4f6', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${completionRate}%`,
+                    background: completionRate === 100
+                      ? 'linear-gradient(90deg,#22c55e,#16a34a)'
+                      : 'linear-gradient(90deg,#3b82f6,#6366f1)',
+                    height: '100%', borderRadius: '999px', transition: 'width 0.5s ease',
+                  }} />
+                </div>
+                {completionRate === 100 && (
+                  <p style={{ margin: '8px 0 0', textAlign: 'center', fontSize: '13px', color: '#166534', fontWeight: 500 }}>
+                    🎉 모든 예약을 완료했어요!
+                  </p>
+                )}
+              </div>
+            )}
 
-        {/* 여행 팁 체크리스트 */}
-        {!loading && !error && tipTasks.length > 0 && (
-          <div className="mt-16">
-            <h3 className="font-headline font-bold text-2xl text-on-surface mb-6">
-              여행 준비 체크리스트
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {tipTasks.map((task, idx) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  featured={idx === 0}
-                  onToggleDone={() => handleToggleDone(task.id)}
+            {(['BOOKING', 'REVIEW', 'TIPS'] as const).map(section => {
+              const cfg = SECTION_CONFIG[section];
+              const items = section === 'BOOKING' ? bookingItems
+                : section === 'REVIEW' ? reviewItems
+                : tipsItems;
+              if (items.length === 0) return null;
+              return (
+                <TaskSection
+                  key={section}
+                  section={section}
+                  config={cfg}
+                  items={items}
+                  onToggle={handleToggleDone}
+                  onRefresh={refreshBudget}
                 />
-              ))}
-            </div>
-          </div>
+              );
+            })}
+          </>
         )}
       </div>
     </AppLayout>

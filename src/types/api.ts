@@ -55,12 +55,16 @@ export interface APIPlanItem {
   done_at?: string;
   actual_amount?: string;   // "120000.00"
   is_task?: boolean;
+  task_section?: 'BOOKING' | 'REVIEW' | 'TIPS' | null;
+  tip_summary?: string;
+  review_url?: string;
   priority?: 'HIGH' | 'MEDIUM' | 'LOW';
   is_active?: boolean;
   tip_type?: string | null;
   tip_metadata?: Record<string, unknown>;
   transport_params?: Record<string, unknown>;
   naver_map_url?: string;
+  ticket_url?: string;
 }
 
 export interface APITransportSegment {
