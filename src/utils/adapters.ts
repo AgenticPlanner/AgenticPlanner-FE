@@ -50,6 +50,7 @@ export const adaptItemToStop = (item: APIPlanItem): ItineraryStop => ({
 export const adaptDayToTripDay = (day: APIPlanDay): TripDay => {
   const nonTipItems = (day.items ?? []).filter(item => item.category !== 'TIP');
   return {
+    dayNumber: day.day_number,
     label: `Day ${day.day_number}${day.date ? ` · ${formatDate(day.date)}` : ''}`,
     stops: [...nonTipItems]
       .sort((a, b) => a.order_index - b.order_index)

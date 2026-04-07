@@ -15,7 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: 'checklist', label: '작업', href: '/tasks' },
   { icon: 'route', label: '일정', href: '/itinerary' },
   { icon: 'edit_note', label: 'Plan', href: '/plan' },
-  { icon: 'map', label: '지도', href: '#' },
+  { icon: 'map', label: '지도', href: '/map' },
   { icon: 'explore', label: '탐색', href: '#' },
 ];
 

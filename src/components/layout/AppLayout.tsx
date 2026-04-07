@@ -12,6 +12,7 @@ const APP_NAV_ITEMS: MobileNavItem[] = [
   { label: '일정', icon: 'route', value: '/itinerary' },
   { label: 'Plan', icon: 'edit_note', value: '/plan' },
   { label: 'Chat', icon: 'smart_toy', value: 'chat' },
+  { label: '지도', icon: 'map', value: '/map' },
 ];
 
 interface AppLayoutProps {

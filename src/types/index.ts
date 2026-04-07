@@ -59,6 +59,7 @@ export interface DayStats {
 
 export interface TripDay {
   label: string;
+  dayNumber?: number;
   stops: ItineraryStop[];
   stats: DayStats;
   travelTime: string;
