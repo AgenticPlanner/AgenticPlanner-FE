@@ -4,7 +4,7 @@ import type { AgentSession, AgentMessage, SSEEvent, Concept, TravelInfo } from '
 import { getAgentSession, getSessionList, streamChat, selectConcept } from '@/api/agent';
 import { AppLayout } from '@/components/layout';
 import ChatSidebar from '@/components/features/chat/ChatSidebar';
-import PlanningProgress from '@/components/features/chat/PlanningProgress';
+import CrawlingStatus from '@/components/CrawlingStatus';
 import QuickReplyButtons from '@/components/features/chat/QuickReplyButtons';
 
 // ─── 로컬 타입 ────────────────────────────────────────────────────────────────
@@ -61,6 +61,7 @@ export default function ChatPage() {
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
   const [crawlingStatus, setCrawlingStatus] = useState<CrawlingStatus | null>(null);
   const [planId, setPlanId] = useState<string | null>(null);
+  const [crawlingDone, setCrawlingDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -183,7 +184,14 @@ export default function ChatPage() {
               break;
 
             case 'tool_result':
-              if (event.result) setCrawlingStatus(event.result);
+              if (event.result) {
+                setCrawlingStatus(event.result);
+                const r = event.result;
+                if (r.accommodation_count > 0 || r.activity_count > 0 ||
+                    r.flight_count > 0 || r.has_exchange_rate) {
+                  setCrawlingDone(true);
+                }
+              }
               break;
 
             case 'phase_change':
@@ -215,6 +223,7 @@ export default function ChatPage() {
                 });
               }
               if (event.plan_id) setPlanId(event.plan_id);
+              setCrawlingDone(false);
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId ? { ...m, isStreaming: false } : m
@@ -343,39 +352,13 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* 크롤링 상태 배너 */}
-        {crawlingStatus && (
-          <div className="bg-surface-container-low rounded-xl px-4 py-2 mb-3 text-sm font-body text-on-surface-variant flex flex-wrap gap-3 shrink-0">
-            {crawlingStatus.accommodation_count > 0 && (
-              <span>숙소 {crawlingStatus.accommodation_count}개</span>
-            )}
-            {crawlingStatus.activity_count > 0 && (
-              <span>액티비티 {crawlingStatus.activity_count}개</span>
-            )}
-            {crawlingStatus.flight_count > 0 && (
-              <span>항공 {crawlingStatus.flight_count}개</span>
-            )}
-            {crawlingStatus.has_exchange_rate && <span>환율</span>}
-            <span className="text-primary font-semibold">실시간 수집 완료</span>
-          </div>
-        )}
-
-        {/* Thinking steps */}
-        {thinkingSteps.length > 0 && isStreaming && (
-          <div className="bg-surface-container rounded-xl px-4 py-2 mb-3 text-xs font-body text-on-surface-variant space-y-1 shrink-0">
-            {thinkingSteps.slice(-3).map((s, i) => (
-              <p key={i}>{s.text}</p>
-            ))}
-          </div>
-        )}
-
-        {/* 계획 생성 진행률 */}
-        <PlanningProgress
+        {/* 크롤링 + 계획 생성 진행 상태 */}
+        <CrawlingStatus
           phase={session.phase}
           isStreaming={isStreaming}
-          thinkingSteps={thinkingSteps.map((s) => s.text)}
           crawlingStatus={crawlingStatus}
-          isDone={!!planId}
+          thinkingSteps={thinkingSteps.map((s) => s.text)}
+          isDone={!!planId && !isStreaming}
         />
 
         {/* 메시지 목록 */}
@@ -467,6 +450,54 @@ export default function ChatPage() {
           onSend={handleSend}
           isStreaming={isStreaming}
         />
+
+        {/* 크롤링 완료 후 계획 생성 버튼 */}
+        {crawlingDone && !isStreaming && session?.phase === 'planning' && (
+          <div style={{
+            padding: '12px 16px',
+            background: 'linear-gradient(135deg, #f0fdf4, #eff6ff)',
+            border: '1px solid #86efac',
+            borderRadius: '12px',
+            marginBottom: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            animation: 'fadeIn 0.4s ease',
+          }}>
+            <div>
+              <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#166534' }}>
+                🎯 실시간 데이터 수집 완료!
+              </p>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#6b7280' }}>
+                숙소 {crawlingStatus?.accommodation_count ?? 0}개 ·
+                액티비티 {crawlingStatus?.activity_count ?? 0}개 ·
+                {crawlingStatus?.has_exchange_rate ? ' 환율 ✓' : ''}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setCrawlingDone(false);
+                handleSend('계획 세워줘');
+              }}
+              style={{
+                padding: '10px 20px',
+                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 8px rgba(34,197,94,0.3)',
+              }}
+            >
+              ✨ 계획 생성하기
+            </button>
+          </div>
+        )}
 
         {/* 입력창 */}
         <div className="flex gap-2 items-center bg-surface-container-lowest rounded-2xl px-4 py-3 shadow-ambient mt-2 shrink-0">

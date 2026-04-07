@@ -26,6 +26,7 @@ const QUICK_REPLIES: Record<string, string[]> = {
     '3박 4일로 가고 싶어요',
     '이 정도면 충분해요, 계획 세워줘!',
   ],
+  planning: [],  // CrawlingStatus 버튼으로 대체
   result: [
     '이 계획으로 확정할게요 ✅',
     '숙소를 바꿔줘',
