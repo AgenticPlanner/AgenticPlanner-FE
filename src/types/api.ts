@@ -186,7 +186,7 @@ export interface AgentSession {
 }
 
 export interface SSEEvent {
-  type: 'delta' | 'thinking_step' | 'tool_result' | 'phase_change' | 'done' | 'error';
+  type: 'delta' | 'thinking_step' | 'tool_result' | 'phase_change' | 'done' | 'error' | 'saving_step';
   delta?: string;
   step?: string;
   tool?: string;
@@ -202,6 +202,7 @@ export interface SSEEvent {
   plan_id?: string;
   plan_updated?: boolean;
   error?: string;
+  message?: string;
 }
 
 // API 공통 에러 형태
