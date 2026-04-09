@@ -7,7 +7,7 @@ import { StatRow } from '@/components/ui';
 import { usePanelResize } from '@/hooks/usePanelResize';
 import { usePlanContext } from '@/contexts/PlanContext';
 import { getPlan, getPlanBudgetSummary, type BudgetSummary } from '@/api/plans';
-import type { APIPlan } from '@/types/api';
+import type { APIPlan, APIPlanWeather } from '@/types/api';
 import { adaptPlanToTripDays } from '@/utils/adapters';
 type ItineraryMobileTab = 'timeline' | 'sidebar';
 
@@ -235,7 +235,7 @@ export default function ItineraryPage() {
                     dailyInfo={plan.days?.[activeDayIndex]?.daily_info}
                     weather={(() => {
                       const dailyWeather = plan.days?.[activeDayIndex]?.daily_info?.weather;
-                      if (dailyWeather?.avg_temp_c != null) return dailyWeather;
+                      if (dailyWeather?.avg_temp_c != null) return dailyWeather as unknown as APIPlanWeather;
                       return plan.extra_data?.weather;
                     })()}
                     transport={plan.extra_data?.transport}
