@@ -11,6 +11,7 @@ interface PlanningOverlayProps {
   thinkingSteps: string[]
   progress: number
   savingStep?: { step: string; message: string } | null
+  onAbort?: () => void
 }
 
 const STEP_MESSAGES = [
@@ -29,6 +30,7 @@ export default function PlanningOverlay({
   thinkingSteps,
   progress,
   savingStep,
+  onAbort,
 }: PlanningOverlayProps) {
   const [displayProgress, setDisplayProgress] = useState(0)
   const [bobSpeed, setBobSpeed] = useState(1600)
@@ -271,6 +273,27 @@ export default function PlanningOverlay({
             )}
             {savingStep.message}
           </div>
+        )}
+
+        {/* 중단 버튼 */}
+        {onAbort && (
+          <button
+            type="button"
+            onClick={onAbort}
+            style={{
+              marginTop: '16px',
+              width: '100%',
+              padding: '10px',
+              background: 'transparent',
+              border: '1px solid rgba(239,68,68,0.4)',
+              borderRadius: '10px',
+              color: '#ef4444',
+              fontSize: '13px',
+              cursor: 'pointer',
+            }}
+          >
+            ✕ 계획 생성 중단
+          </button>
         )}
 
         {/* 저장 완료 로그 */}

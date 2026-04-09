@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { AgentSession, AgentMessage, SSEEvent, Concept, TravelInfo } from '@/types/api';
 import { getAgentSession, getSessionList, streamChat, selectConcept } from '@/api/agent';
+import apiClient from '@/api/client';
 import { AppLayout } from '@/components/layout';
 import ChatSidebar from '@/components/features/chat/ChatSidebar';
 import PlanningOverlay from '@/components/PlanningOverlay';
@@ -288,6 +289,17 @@ export default function ChatPage() {
       setError('컨셉 선택에 실패했습니다.');
     }
   }, [sessionId, isStreaming, handleSend]);
+
+  // ── 스트리밍 중단 ────────────────────────────────────────────────────────────
+  const handleAbort = useCallback(async () => {
+    if (!sessionId) return;
+    abortRef.current?.abort();
+    try {
+      await apiClient.post('/api/v1/agent/chat/abort/', { session_id: sessionId });
+    } catch {}
+    setIsStreaming(false);
+    setShowPlanningOverlay(false);
+  }, [sessionId]);
 
   // ── overlayProgress — early return 이전에 선언 (Rules of Hooks) ─────────────
   const overlayProgress = useMemo(() => {
@@ -591,6 +603,7 @@ export default function ChatPage() {
           thinkingSteps={thinkingSteps.map((s) => s.text)}
           progress={overlayProgress}
           savingStep={savingStep}
+          onAbort={handleAbort}
         />
       )}
     </AppLayout>

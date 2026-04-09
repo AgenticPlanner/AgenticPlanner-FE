@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { AppLayout } from '@/components/layout';
 import { DaySelector, TimelineThread, StopCard, DaySidebar, ItinerarySkeleton } from '@/components/features/itinerary';
@@ -6,7 +6,7 @@ import { FABGroup, ResizeDivider, EmptyState } from '@/components/common';
 import { StatRow } from '@/components/ui';
 import { usePanelResize } from '@/hooks/usePanelResize';
 import { usePlanContext } from '@/contexts/PlanContext';
-import { getPlan } from '@/api/plans';
+import { getPlan, getPlanBudgetSummary, type BudgetSummary } from '@/api/plans';
 import type { APIPlan } from '@/types/api';
 import { adaptPlanToTripDays } from '@/utils/adapters';
 type ItineraryMobileTab = 'timeline' | 'sidebar';
@@ -23,6 +23,12 @@ export default function ItineraryPage() {
   const [localPlan, setLocalPlan] = useState<APIPlan | null>(null);
   const [localLoading, setLocalLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
+
+  const refreshBudget = useCallback(() => {
+    if (!urlPlanId) return;
+    getPlanBudgetSummary(urlPlanId).then(setBudgetSummary).catch(() => {});
+  }, [urlPlanId]);
 
   // urlPlanId 변경 또는 마운트 시 항상 직접 API 호출 (컴포넌트 인스턴스가 바뀌므로 매 진입마다 실행됨)
   useEffect(() => {
@@ -30,6 +36,7 @@ export default function ItineraryPage() {
     setLocalLoading(true);
     setLocalPlan(null);
     setLocalError(null);
+    setBudgetSummary(null);
     getPlan(urlPlanId)
       .then(data => {
         setLocalPlan(data);
@@ -37,6 +44,7 @@ export default function ItineraryPage() {
       })
       .catch(() => setLocalError('플랜을 불러오지 못했습니다.'))
       .finally(() => setLocalLoading(false));
+    refreshBudget();
   // setActivePlanId는 stable (useCallback [])이므로 deps 생략해도 안전
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlPlanId]);
@@ -225,7 +233,11 @@ export default function ItineraryPage() {
                     day={activeDay}
                     dayIndex={activeDayIndex + 1}
                     dailyInfo={plan.days?.[activeDayIndex]?.daily_info}
-                    weather={plan.extra_data?.weather}
+                    weather={(() => {
+                      const dailyWeather = plan.days?.[activeDayIndex]?.daily_info?.weather;
+                      if (dailyWeather?.avg_temp_c != null) return dailyWeather;
+                      return plan.extra_data?.weather;
+                    })()}
                     transport={plan.extra_data?.transport}
                     actualSpent={(() => {
                       const rawDay = plan.days?.[activeDayIndex];
@@ -236,14 +248,22 @@ export default function ItineraryPage() {
                     })()}
                   />
 
-                  {plan.total_budget && Number(plan.total_budget) > 0 && (
+                  {(budgetSummary || (plan.total_budget && Number(plan.total_budget) > 0)) && (
                     <div className="bg-white rounded-xl  border border-surface-container-high p-6 shadow-header">
                       <h5 className="font-bold text-lg text-on-surface mb-4">
                         플랜 예산
                       </h5>
                       <StatRow
                         label="총 예산"
-                        value={`₩${Number(plan.total_budget).toLocaleString()}`}
+                        value={(() => {
+                          if (budgetSummary) {
+                            const amt = budgetSummary.total_actual > 0
+                              ? budgetSummary.total_actual
+                              : budgetSummary.total_estimated;
+                            return `₩${amt.toLocaleString()}`;
+                          }
+                          return `₩${Number(plan.total_budget).toLocaleString()}`;
+                        })()}
                         valueClassName="text-primary-dark"
                       />
                     </div>

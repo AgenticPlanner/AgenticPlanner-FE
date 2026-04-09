@@ -48,7 +48,7 @@ export const adaptItemToStop = (item: APIPlanItem): ItineraryStop => ({
 });
 
 export const adaptDayToTripDay = (day: APIPlanDay): TripDay => {
-  const nonTipItems = (day.items ?? []).filter(item => item.category !== 'TIP');
+  const nonTipItems = (day.items ?? []).filter(item => item.category !== 'TIP' && item.is_task !== true);
   return {
     dayNumber: day.day_number,
     label: `Day ${day.day_number}${day.date ? ` · ${formatDate(day.date)}` : ''}`,
