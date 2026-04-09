@@ -2,10 +2,8 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { AgentSession, AgentMessage, SSEEvent, Concept, TravelInfo } from '@/types/api';
 import { getAgentSession, getSessionList, streamChat, selectConcept } from '@/api/agent';
-import { getPlan } from '@/api/plans';
 import { AppLayout } from '@/components/layout';
 import ChatSidebar from '@/components/features/chat/ChatSidebar';
-import CrawlingStatus from '@/components/CrawlingStatus';
 import PlanningOverlay from '@/components/PlanningOverlay';
 import QuickReplyButtons from '@/components/features/chat/QuickReplyButtons';
 
@@ -64,14 +62,9 @@ export default function ChatPage() {
   const [crawlingStatus, setCrawlingStatus] = useState<CrawlingStatusData | null>(null);
   const [planId, setPlanId] = useState<string | null>(null);
   const [crawlingDone, setCrawlingDone] = useState(false);
-  const [planSummary, setPlanSummary] = useState<{
-    days: number;
-    accommodations: number;
-    restaurants: number;
-    transports: number;
-  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPlanningOverlay, setShowPlanningOverlay] = useState(false);
+  const [savingStep, setSavingStep] = useState<{ step: string; message: string } | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -98,7 +91,6 @@ export default function ChatPage() {
     setThinkingSteps([]);
     setCrawlingStatus(null);
     setPlanId(null);
-    setPlanSummary(null);
     setError(null);
     autoStartFired.current = false;
     setLoading(true);
@@ -156,6 +148,7 @@ export default function ChatPage() {
     setIsStreaming(true);
     setThinkingSteps([]);
     setCrawlingStatus(null);
+    setSavingStep(null);
     setError(null);
 
     const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content: text };
@@ -196,11 +189,8 @@ export default function ChatPage() {
             case 'tool_result':
               if (event.result) {
                 setCrawlingStatus(event.result);
-                const r = event.result;
-                if (r.accommodation_count > 0 || r.activity_count > 0 ||
-                    r.flight_count > 0 || r.has_exchange_rate) {
-                  setCrawlingDone(true);
-                }
+                // 크롤링 실패(전부 0)여도 tool_result 수신 시 버튼 표시
+                setCrawlingDone(true);
               }
               break;
 
@@ -235,15 +225,6 @@ export default function ChatPage() {
               }
               if (event.plan_id) {
                 setPlanId(event.plan_id);
-                getPlan(event.plan_id).then((plan) => {
-                  const allItems = plan.days.flatMap((d) => d.items ?? []);
-                  setPlanSummary({
-                    days: plan.days.length,
-                    accommodations: allItems.filter((i) => i.category === 'ACCOMMODATION').length,
-                    restaurants: allItems.filter((i) => i.category === 'RESTAURANT').length,
-                    transports: allItems.filter((i) => i.category === 'TRANSPORT').length,
-                  });
-                }).catch(() => {});
               }
               setCrawlingDone(false);
               // 스트리밍 완료 시 JSON 잔재 최후 제거
@@ -264,6 +245,14 @@ export default function ChatPage() {
                     : m
                 )
               );
+              break;
+
+            case 'saving_step':
+              setSavingStep({
+                step: event.step ?? '',
+                message: event.message ?? '',
+              });
+              if (event.plan_id) setPlanId(event.plan_id);
               break;
 
             case 'error':
@@ -407,17 +396,6 @@ export default function ChatPage() {
             )}
           </div>
         </div>
-
-        {/* 크롤링 + 계획 생성 진행 상태 */}
-        <CrawlingStatus
-          phase={session.phase}
-          isStreaming={isStreaming}
-          crawlingStatus={crawlingStatus}
-          thinkingSteps={thinkingSteps.map((s) => s.text)}
-          isDone={!!planId && !isStreaming}
-          planSummary={planSummary ?? undefined}
-          onViewPlan={planId ? () => navigate(`/itinerary?planId=${planId}`, { state: { forceRefresh: true } }) : undefined}
-        />
 
         {/* 메시지 목록 */}
         <div className="flex-1 overflow-y-auto flex flex-col gap-3 no-scrollbar pb-2">
@@ -612,6 +590,7 @@ export default function ChatPage() {
           crawlingStatus={crawlingStatus}
           thinkingSteps={thinkingSteps.map((s) => s.text)}
           progress={overlayProgress}
+          savingStep={savingStep}
         />
       )}
     </AppLayout>

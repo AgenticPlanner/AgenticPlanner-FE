@@ -10,6 +10,7 @@ interface PlanningOverlayProps {
   } | null
   thinkingSteps: string[]
   progress: number
+  savingStep?: { step: string; message: string } | null
 }
 
 const STEP_MESSAGES = [
@@ -27,6 +28,7 @@ export default function PlanningOverlay({
   crawlingStatus,
   thinkingSteps,
   progress,
+  savingStep,
 }: PlanningOverlayProps) {
   const [displayProgress, setDisplayProgress] = useState(0)
   const [bobSpeed, setBobSpeed] = useState(1600)
@@ -97,6 +99,13 @@ export default function PlanningOverlay({
         .dot1 { animation: dotPulse 1.2s infinite 0s }
         .dot2 { animation: dotPulse 1.2s infinite 0.4s }
         .dot3 { animation: dotPulse 1.2s infinite 0.8s }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px) }
+          to   { opacity: 1; transform: translateY(0) }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg) }
+        }
       `}</style>
 
       {/* 카드 */}
@@ -225,6 +234,63 @@ export default function PlanningOverlay({
           >
             💭 {thinkingSteps[thinkingSteps.length - 1]}
           </p>
+        )}
+
+        {/* 저장 단계 */}
+        {savingStep && (
+          <div
+            style={{
+              marginTop: '16px',
+              padding: '10px 14px',
+              background: savingStep.step === 'plan_saved' ? '#f0fdf4' : '#eff6ff',
+              border: `1px solid ${savingStep.step === 'plan_saved' ? '#86efac' : '#bfdbfe'}`,
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '13px',
+              color: savingStep.step === 'plan_saved' ? '#166534' : '#1e40af',
+              fontWeight: 500,
+              animation: 'fadeIn 0.3s ease',
+            }}
+          >
+            {savingStep.step === 'plan_saved' ? (
+              <span>✅</span>
+            ) : (
+              <div
+                style={{
+                  width: '14px',
+                  height: '14px',
+                  border: '2px solid #3b82f6',
+                  borderTop: '2px solid transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                  flexShrink: 0,
+                }}
+              />
+            )}
+            {savingStep.message}
+          </div>
+        )}
+
+        {/* 저장 완료 로그 */}
+        {savingStep?.step === 'plan_saved' && (
+          <div
+            style={{
+              marginTop: '8px',
+              padding: '8px 12px',
+              background: '#f9fafb',
+              borderRadius: '8px',
+              fontSize: '11px',
+              color: '#9ca3af',
+              fontFamily: 'monospace',
+            }}
+          >
+            <div>📋 일정 저장됨</div>
+            <div>✈️ 교통편 처리됨</div>
+            <div>🏨 숙소 연결됨</div>
+            <div>✅ 체크리스트 생성됨</div>
+          </div>
         )}
       </div>
     </div>
